@@ -1,0 +1,25 @@
+# Maven
+target/
+
+# Java
+*.class
+*.jar
+*.war
+
+# GraalVM native binary
+*-runner
+*-runner.exe
+
+# Node
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
