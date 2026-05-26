@@ -1,0 +1,40 @@
+# read-only persona: can get/list/watch in team-api only. No write verbs,
+# single namespace. Tests Capability Snapshot accuracy for read-only users.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: read-only
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: read-only-token
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: read-only
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: read-only
+  namespace: team-api
+rules:
+  - apiGroups: ["", "apps", "batch", "networking.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-only
+  namespace: team-api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: read-only
+subjects:
+  - kind: ServiceAccount
+    name: read-only
+    namespace: default

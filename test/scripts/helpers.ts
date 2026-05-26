@@ -169,59 +169,75 @@ export async function waitForDefaultServiceAccounts(
   }
 }
 
-export async function generateKubeconfig(kc: k8s.KubeConfig): Promise<void> {
-  const core = kc.makeApiClient(k8s.CoreV1Api);
+export const PERSONAS = [
+  'full-access',
+  'namespace-only',
+  'read-only',
+  'mixed-permissions',
+] as const;
 
-  let tokenData: string | undefined;
-  let caData: string | undefined;
+export type Persona = (typeof PERSONAS)[number];
+
+async function readTokenSecret(
+  core: InstanceType<typeof k8s.CoreV1Api>,
+  name: string,
+): Promise<{ token: string; ca: string }> {
   for (let attempt = 0; attempt < 30; attempt++) {
     try {
       const secret = await core.readNamespacedSecret({
-        name: 'full-access-token',
+        name: `${name}-token`,
         namespace: 'default',
       });
-      tokenData = secret.data?.['token'];
-      caData = secret.data?.['ca.crt'];
-      if (tokenData && caData) break;
+      const tokenData = secret.data?.['token'];
+      const caData = secret.data?.['ca.crt'];
+      if (tokenData && caData) {
+        return {
+          token: Buffer.from(tokenData, 'base64').toString(),
+          ca: caData,
+        };
+      }
     } catch {
       // secret might not be populated yet
     }
     await Bun.sleep(1000);
   }
+  throw new Error(`Timed out waiting for ${name}-token secret`);
+}
 
-  if (!tokenData || !caData) {
-    throw new Error('Timed out waiting for full-access-token secret');
-  }
-
-  const token = Buffer.from(tokenData, 'base64').toString();
-
+export async function generateKubeconfigs(kc: k8s.KubeConfig): Promise<void> {
+  const core = kc.makeApiClient(k8s.CoreV1Api);
   const cluster = kc.getCurrentCluster();
   if (!cluster) throw new Error('No current cluster');
 
-  const kubeconfig = [
-    'apiVersion: v1',
-    'kind: Config',
-    'clusters:',
-    '  - cluster:',
-    `      certificate-authority-data: ${caData}`,
-    `      server: ${cluster.server}`,
-    `    name: ${CLUSTER_NAME}`,
-    'contexts:',
-    '  - context:',
-    `      cluster: ${CLUSTER_NAME}`,
-    '      user: full-access',
-    `    name: full-access@${CLUSTER_NAME}`,
-    `current-context: full-access@${CLUSTER_NAME}`,
-    'users:',
-    '  - name: full-access',
-    '    user:',
-    `      token: ${token}`,
-    '',
-  ].join('\n');
-
   mkdirSync(KUBECONFIGS_DIR, { recursive: true });
-  writeFileSync(join(KUBECONFIGS_DIR, 'full-access.yaml'), kubeconfig);
-  console.log(`Generated ${join(KUBECONFIGS_DIR, 'full-access.yaml')}`);
+
+  for (const persona of PERSONAS) {
+    const { token, ca } = await readTokenSecret(core, persona);
+
+    const kubeconfig = [
+      'apiVersion: v1',
+      'kind: Config',
+      'clusters:',
+      '  - cluster:',
+      `      certificate-authority-data: ${ca}`,
+      `      server: ${cluster.server}`,
+      `    name: ${CLUSTER_NAME}`,
+      'contexts:',
+      '  - context:',
+      `      cluster: ${CLUSTER_NAME}`,
+      `      user: ${persona}`,
+      `    name: ${persona}@${CLUSTER_NAME}`,
+      `current-context: ${persona}@${CLUSTER_NAME}`,
+      'users:',
+      `  - name: ${persona}`,
+      '    user:',
+      `      token: ${token}`,
+      '',
+    ].join('\n');
+
+    writeFileSync(join(KUBECONFIGS_DIR, `${persona}.yaml`), kubeconfig);
+    console.log(`  ${persona}.yaml`);
+  }
 }
 
 export async function waitForResources(kc: k8s.KubeConfig): Promise<void> {

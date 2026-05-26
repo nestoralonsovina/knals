@@ -1,0 +1,70 @@
+# mixed-permissions persona: per-namespace, per-resource granularity.
+# team-api: can read pods, deployments, services, configmaps — but NOT secrets.
+# team-billing: can read pods only.
+# team-infra: no access at all.
+# Tests Capability Snapshot accuracy for fine-grained RBAC.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mixed-permissions
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mixed-permissions-token
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: mixed-permissions
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mixed-permissions
+  namespace: team-api
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mixed-permissions
+  namespace: team-api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mixed-permissions
+subjects:
+  - kind: ServiceAccount
+    name: mixed-permissions
+    namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mixed-permissions
+  namespace: team-billing
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mixed-permissions
+  namespace: team-billing
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mixed-permissions
+subjects:
+  - kind: ServiceAccount
+    name: mixed-permissions
+    namespace: default

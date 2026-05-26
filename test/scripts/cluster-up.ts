@@ -9,7 +9,7 @@ import {
   applyManifests,
   waitForDefaultServiceAccounts,
   waitForResources,
-  generateKubeconfig,
+  generateKubeconfigs,
 } from './helpers';
 
 async function main() {
@@ -28,6 +28,14 @@ async function main() {
   console.log('Waiting for default ServiceAccounts...');
   await waitForDefaultServiceAccounts(kc);
 
+  console.log('Applying RBAC personas...');
+  await applyManifests(
+    kc,
+    join(MANIFESTS_DIR, 'rbac', 'namespace-only.yaml'),
+    join(MANIFESTS_DIR, 'rbac', 'read-only.yaml'),
+    join(MANIFESTS_DIR, 'rbac', 'mixed-permissions.yaml'),
+  );
+
   console.log('Applying sample resources...');
   await applyManifests(
     kc,
@@ -40,7 +48,7 @@ async function main() {
   await waitForResources(kc);
 
   console.log('Generating kubeconfigs...');
-  await generateKubeconfig(kc);
+  await generateKubeconfigs(kc);
 
   console.log(`\nCluster '${CLUSTER_NAME}' is ready.`);
   console.log(`Use: export KUBECONFIG=${KUBECONFIGS_DIR}/full-access.yaml`);

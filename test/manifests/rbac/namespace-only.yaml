@@ -1,0 +1,65 @@
+# namespace-only persona: can read resources in team-api and team-infra,
+# but cannot list namespaces at cluster scope. Tests the Namespace Memory
+# flow where users must manually add namespaces.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: namespace-only
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: namespace-only-token
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: namespace-only
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: namespace-only
+  namespace: team-api
+rules:
+  - apiGroups: ["", "apps", "batch", "networking.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: namespace-only
+  namespace: team-api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: namespace-only
+subjects:
+  - kind: ServiceAccount
+    name: namespace-only
+    namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: namespace-only
+  namespace: team-infra
+rules:
+  - apiGroups: ["", "apps", "batch", "networking.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: namespace-only
+  namespace: team-infra
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: namespace-only
+subjects:
+  - kind: ServiceAccount
+    name: namespace-only
+    namespace: default
