@@ -275,3 +275,50 @@ export function cleanKubeconfigs(): void {
     rmSync(KUBECONFIGS_DIR, { recursive: true });
   }
 }
+
+// --- Server lifecycle ---
+
+export const ROOT_DIR = resolve(TEST_DIR, '..');
+export const SERVER_PORT = 18080;
+export const SERVER_URL = `http://localhost:${SERVER_PORT}`;
+
+let serverProc: ReturnType<typeof Bun.spawn> | null = null;
+
+export async function buildServer(): Promise<void> {
+  console.log('Building server...');
+  await exec(
+    [join(ROOT_DIR, 'mvnw'), '-f', join(ROOT_DIR, 'pom.xml'), 'install', '-DskipTests'],
+    { inheritStderr: true },
+  );
+}
+
+export async function startServer(): Promise<void> {
+  const jarPath = join(ROOT_DIR, 'knals-server/target/quarkus-app/quarkus-run.jar');
+  if (!existsSync(jarPath)) {
+    throw new Error(`Server jar not found at ${jarPath}. Run buildServer() first.`);
+  }
+
+  console.log('Starting server...');
+  serverProc = Bun.spawn(
+    ['java', `-Dquarkus.http.port=${SERVER_PORT}`, '-jar', jarPath],
+    { stdout: 'pipe', stderr: 'pipe' },
+  );
+
+  for (let attempt = 0; attempt < 60; attempt++) {
+    try {
+      const resp = await fetch(`${SERVER_URL}/q/health/ready`);
+      if (resp.ok) return;
+    } catch {
+      // not ready yet
+    }
+    await Bun.sleep(1000);
+  }
+  throw new Error('Server did not start within 60s');
+}
+
+export function stopServer(): void {
+  if (serverProc) {
+    serverProc.kill();
+    serverProc = null;
+  }
+}
