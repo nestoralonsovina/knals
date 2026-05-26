@@ -3,3 +3,26 @@
 export type ClientOptions = {
     baseUrl: 'http://localhost:8080' | 'http://0.0.0.0:8080' | (string & {});
 };
+
+export type Cluster = {
+    name?: string;
+    server?: string;
+    user?: string;
+    connected?: boolean;
+};
+
+export type GetClustersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/clusters';
+};
+
+export type GetClustersResponses = {
+    /**
+     * OK
+     */
+    200: Array<Cluster>;
+};
+
+export type GetClustersResponse = GetClustersResponses[keyof GetClustersResponses];

@@ -1,6 +1,49 @@
 {
   "openapi" : "3.1.0",
-  "paths" : { },
+  "components" : {
+    "schemas" : {
+      "Cluster" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "server" : {
+            "type" : "string"
+          },
+          "user" : {
+            "type" : "string"
+          },
+          "connected" : {
+            "type" : "boolean"
+          }
+        }
+      }
+    }
+  },
+  "paths" : {
+    "/clusters" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Cluster"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Cluster Resource" ]
+      }
+    }
+  },
   "info" : {
     "title" : "knals",
     "version" : "0.1.0-SNAPSHOT"

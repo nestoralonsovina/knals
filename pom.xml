@@ -12,6 +12,7 @@
     <description>Kubernetes TUI for RBAC-restricted clusters</description>
 
     <modules>
+        <module>knals-core</module>
         <module>knals-server</module>
     </modules>
 
