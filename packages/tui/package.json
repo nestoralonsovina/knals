@@ -1,0 +1,17 @@
+{
+  "name": "@knals/tui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.tsx",
+  "scripts": {
+    "dev": "bun src/index.tsx",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@knals/sdk": "workspace:*",
+    "@opentui/core": "^0.2.15",
+    "@opentui/solid": "^0.2.15",
+    "solid-js": "1.9.12"
+  }
+}

@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.86.0"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "^0.13.1"
   }
 }
