@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Install Bun dependencies
+        run: bun install
+
+      - name: Build Java modules
+        run: ./mvnw install -DskipTests
+
+      - name: Run Java tests
+        run: ./mvnw test
+
+      - name: Build TypeScript packages
+        run: bun run build
+
+      - name: Run TypeScript tests
+        run: bun run test
+
+      - name: Check OpenAPI spec and SDK are in sync
+        run: |
+          make openapi
+          git diff --exit-code openapi.json packages/sdk/src/gen/
