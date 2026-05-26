@@ -20,6 +20,9 @@ node_modules/
 *.swp
 *~
 
+# Test cluster
+test/kubeconfigs/
+
 # OS
 .DS_Store
 Thumbs.db

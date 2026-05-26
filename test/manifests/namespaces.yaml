@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-api
+  labels:
+    team: api
+    environment: development
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-billing
+  labels:
+    team: billing
+    environment: development
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-infra
+  labels:
+    team: infra
+    environment: development

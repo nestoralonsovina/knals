@@ -1,0 +1,14 @@
+{
+  "name": "knals-test",
+  "private": true,
+  "scripts": {
+    "cluster:up": "bun run scripts/cluster-up.ts",
+    "cluster:down": "bun run scripts/cluster-down.ts",
+    "cluster:reset": "bun run scripts/cluster-down.ts && bun run scripts/cluster-up.ts",
+    "test": "bun test",
+    "test:ci": "bun run scripts/cluster-up.ts && bun test; EXIT=$?; bun run scripts/cluster-down.ts; exit $EXIT"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^1.4.0"
+  }
+}

@@ -129,20 +129,23 @@ knals/
 - JDK 21+ (GraalVM recommended)
 - Maven 3.9+
 - Bun
-- Docker (for kind/k3d test clusters)
+- Docker (for kind test clusters)
+- [kind](https://kind.sigs.k8s.io/)
 
 ### Dev loop
 
 - `./mvnw quarkus:dev -pl knals-server` — server with live reload
 - `bun --cwd packages/tui dev` — TUI, reads `KNALS_SERVER_URL` from env
 
-### Testing with mock clusters
+### Test cluster
 
-Use kind or k3d for local clusters with custom RBAC:
+A kind cluster with multiple RBAC personas for development and e2e testing. See [ADR-0003](docs/adr/0003-typescript-test-infrastructure.md).
 
 ```bash
-kind create cluster --name knals-test
-kubectl apply -f test/rbac/restricted-user.yaml
+cd test && bun install          # one-time setup
+bun run cluster:up              # create cluster + apply manifests + generate kubeconfigs
+bun test                        # run e2e tests (cluster must be running)
+bun run cluster:down            # tear down cluster
 ```
 
 ## Ideas borrowed from opencode

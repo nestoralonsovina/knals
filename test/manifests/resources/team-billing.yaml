@@ -1,0 +1,196 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: invoice-processor
+  namespace: team-billing
+  labels:
+    app: invoice-processor
+    team: billing
+    environment: development
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: invoice-processor
+  template:
+    metadata:
+      labels:
+        app: invoice-processor
+        team: billing
+        environment: development
+    spec:
+      containers:
+        - name: invoice-processor
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: invoice-processor
+  namespace: team-billing
+  labels:
+    app: invoice-processor
+    team: billing
+    environment: development
+spec:
+  selector:
+    app: invoice-processor
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-gateway
+  namespace: team-billing
+  labels:
+    app: payment-gateway
+    team: billing
+    environment: development
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-gateway
+  template:
+    metadata:
+      labels:
+        app: payment-gateway
+        team: billing
+        environment: development
+    spec:
+      containers:
+        - name: payment-gateway
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 8443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-gateway
+  namespace: team-billing
+  labels:
+    app: payment-gateway
+    team: billing
+    environment: development
+spec:
+  selector:
+    app: payment-gateway
+  ports:
+    - port: 8443
+      targetPort: 8443
+---
+# Pod: Pending via unschedulable
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ledger-rebuild
+  namespace: team-billing
+  labels:
+    app: ledger-rebuild
+    team: billing
+    environment: development
+spec:
+  containers:
+    - name: ledger-rebuild
+      image: busybox:1.37
+      command: ["sh", "-c", "sleep 3600"]
+  nodeSelector:
+    node-role.kubernetes.io/nonexistent: "true"
+---
+# Pod: Failed via bad image
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tax-calculator
+  namespace: team-billing
+  labels:
+    app: tax-calculator
+    team: billing
+    environment: development
+spec:
+  containers:
+    - name: tax-calculator
+      image: registry.invalid/knals/tax-calc:latest
+  restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: monthly-reconciliation
+  namespace: team-billing
+  labels:
+    app: monthly-reconciliation
+    team: billing
+    environment: development
+spec:
+  template:
+    metadata:
+      labels:
+        app: monthly-reconciliation
+        team: billing
+    spec:
+      containers:
+        - name: reconcile
+          image: busybox:1.37
+          command: ["sh", "-c", "echo 'reconciliation complete'; exit 0"]
+      restartPolicy: Never
+  backoffLimit: 1
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: invoice-reminder
+  namespace: team-billing
+  labels:
+    app: invoice-reminder
+    team: billing
+    environment: development
+spec:
+  schedule: "0 9 * * 1"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: invoice-reminder
+            team: billing
+        spec:
+          containers:
+            - name: reminder
+              image: busybox:1.37
+              command: ["sh", "-c", "echo 'sending reminders'"]
+          restartPolicy: Never
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: billing-config
+  namespace: team-billing
+  labels:
+    app: invoice-processor
+    team: billing
+    environment: development
+data:
+  CURRENCY: "USD"
+  TAX_RATE: "0.08"
+  RETRY_ATTEMPTS: "3"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: stripe-credentials
+  namespace: team-billing
+  labels:
+    app: payment-gateway
+    team: billing
+    environment: development
+type: Opaque
+stringData:
+  api-key: "sk_test_fake_stripe_key_for_dev"
+  webhook-secret: "whsec_fake_webhook_secret"
