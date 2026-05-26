@@ -20,6 +20,12 @@ node_modules/
 *.swp
 *~
 
+# Turborepo
+.turbo/
+
+# TUI build
+packages/tui/dist/
+
 # Test cluster
 test/kubeconfigs/
 
