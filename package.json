@@ -1,4 +1,5 @@
 {
+  "name": "knals",
   "private": true,
   "packageManager": "bun@1.3.4",
   "workspaces": ["packages/*"],
