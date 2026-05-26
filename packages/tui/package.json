@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/index.tsx",
   "scripts": {
+    "build": "echo 'TUI runs directly with bun — no build step needed'",
     "dev": "bun src/index.tsx",
     "test": "bun test"
   },

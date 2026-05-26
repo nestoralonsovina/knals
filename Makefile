@@ -1,0 +1,31 @@
+.PHONY: dev-server dev-tui openapi build test native cluster-up cluster-down
+
+dev-server:
+	@./mvnw -pl knals-server quarkus:dev
+
+dev-tui:
+	@bun --cwd packages/tui dev
+
+openapi:
+	@./mvnw install -DskipTests -q
+	@cp knals-server/target/openapi/openapi.json openapi.json
+	@bun run --cwd packages/sdk generate
+	@echo "OpenAPI spec and SDK regenerated"
+
+build:
+	@./mvnw install -DskipTests
+	@bun run build
+
+test:
+	@./mvnw test
+	@bun run test
+	@cd test && bun test
+
+native:
+	@./mvnw package -Pnative -DskipTests -pl knals-server
+
+cluster-up:
+	@cd test && bun run cluster:up
+
+cluster-down:
+	@cd test && bun run cluster:down
