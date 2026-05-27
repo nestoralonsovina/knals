@@ -20,7 +20,7 @@ export class ServerManager {
   async start(): Promise<{ port: number; url: string }> {
     if (this.proc) throw new Error("Server already started")
 
-    const port = this.findFreePort()
+    const port = await this.findFreePort()
     const cmd = this.command.replace(/__PORT__/g, String(port))
     const parts = cmd.split(/\s+/)
 
@@ -69,8 +69,11 @@ export class ServerManager {
     }
   }
 
-  private findFreePort(): number {
-    return 10000 + Math.floor(Math.random() * 50000)
+  private async findFreePort(): Promise<number> {
+    const server = Bun.serve({ port: 0, fetch() { return new Response() } })
+    const port = server.port
+    server.stop()
+    return port
   }
 
   private async waitForHealth(url: string): Promise<void> {
