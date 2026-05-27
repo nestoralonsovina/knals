@@ -37,6 +37,10 @@ function resolveServerCommand(): string {
   return `java -Dquarkus.http.port=__PORT__ -jar ${jvmJar}`
 }
 
+function resetTerminal() {
+  process.stdout.write("\x1b[?1049l\x1b[?25h\x1b[0m\x1b[?1003l\x1b[?1002l\x1b[?1000l\x1b[?1006l\x1b[?2004l")
+}
+
 async function main() {
   const serverCmd = resolveServerCommand()
   const isNative = !serverCmd.includes("java ")
@@ -47,13 +51,19 @@ async function main() {
   })
 
   process.on("SIGINT", async () => {
+    resetTerminal()
     await server.stop()
     process.exit(0)
   })
 
   process.on("SIGTERM", async () => {
+    resetTerminal()
     await server.stop()
     process.exit(0)
+  })
+
+  process.on("exit", () => {
+    resetTerminal()
   })
 
   try {
