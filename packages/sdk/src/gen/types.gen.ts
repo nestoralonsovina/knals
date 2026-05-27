@@ -111,6 +111,40 @@ export type DeleteClustersByCtxNamespacesByNsResponses = {
     200: unknown;
 };
 
+export type GetClustersByCtxNamespacesByNsCapabilitiesData = {
+    body?: never;
+    path: {
+        ctx: string;
+        ns: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces/{ns}/capabilities';
+};
+
+export type GetClustersByCtxNamespacesByNsCapabilitiesResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostClustersByCtxNamespacesByNsCapabilitiesRefreshData = {
+    body?: never;
+    path: {
+        ctx: string;
+        ns: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces/{ns}/capabilities/refresh';
+};
+
+export type PostClustersByCtxNamespacesByNsCapabilitiesRefreshResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type GetClustersByCtxNamespacesByNsResourcesByTypeData = {
     body?: never;
     path: {

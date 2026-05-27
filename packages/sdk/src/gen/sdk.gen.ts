@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, GetClustersByCtxNamespacesByNsResourcesByTypeData, GetClustersByCtxNamespacesByNsResourcesByTypeResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, GetResourcesTypesData, GetResourcesTypesResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesDiscoverData, PostClustersByCtxNamespacesDiscoverResponses, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
+import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesByNsCapabilitiesData, GetClustersByCtxNamespacesByNsCapabilitiesResponses, GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, GetClustersByCtxNamespacesByNsResourcesByTypeData, GetClustersByCtxNamespacesByNsResourcesByTypeResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, GetResourcesTypesData, GetResourcesTypesResponses, PostClustersByCtxNamespacesByNsCapabilitiesRefreshData, PostClustersByCtxNamespacesByNsCapabilitiesRefreshResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesDiscoverData, PostClustersByCtxNamespacesDiscoverResponses, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -68,6 +68,26 @@ export const postClustersByCtxNamespacesDiscover = <ThrowOnError extends boolean
 export const deleteClustersByCtxNamespacesByNs = <ThrowOnError extends boolean = false>(options: Options<DeleteClustersByCtxNamespacesByNsData, ThrowOnError>) => {
     return (options.client ?? client).delete<DeleteClustersByCtxNamespacesByNsResponses, unknown, ThrowOnError>({
         url: '/clusters/{ctx}/namespaces/{ns}',
+        ...options
+    });
+};
+
+/**
+ * Get
+ */
+export const getClustersByCtxNamespacesByNsCapabilities = <ThrowOnError extends boolean = false>(options: Options<GetClustersByCtxNamespacesByNsCapabilitiesData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetClustersByCtxNamespacesByNsCapabilitiesResponses, unknown, ThrowOnError>({
+        url: '/clusters/{ctx}/namespaces/{ns}/capabilities',
+        ...options
+    });
+};
+
+/**
+ * Refresh
+ */
+export const postClustersByCtxNamespacesByNsCapabilitiesRefresh = <ThrowOnError extends boolean = false>(options: Options<PostClustersByCtxNamespacesByNsCapabilitiesRefreshData, ThrowOnError>) => {
+    return (options.client ?? client).post<PostClustersByCtxNamespacesByNsCapabilitiesRefreshResponses, unknown, ThrowOnError>({
+        url: '/clusters/{ctx}/namespaces/{ns}/capabilities/refresh',
         ...options
     });
 };

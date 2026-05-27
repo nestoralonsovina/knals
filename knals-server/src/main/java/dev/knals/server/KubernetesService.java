@@ -1,5 +1,6 @@
 package dev.knals.server;
 
+import io.fabric8.kubernetes.api.model.authorization.v1.SelfSubjectRulesReviewBuilder;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
@@ -9,7 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
-import java.util.List;
+import java.util.*;
 
 @ApplicationScoped
 public class KubernetesService {
@@ -60,6 +61,47 @@ public class KubernetesService {
         return rawGet(contextName, path, "application/json",
                 body -> new String(body),
                 resourceType + "/" + name);
+    }
+
+    public KubeResult<Map<String, List<String>>> selfSubjectRulesReview(String contextName, String namespace) {
+        try {
+            try (var client = buildClient(contextName)) {
+                var review = new SelfSubjectRulesReviewBuilder()
+                        .withNewSpec().withNamespace(namespace).endSpec()
+                        .build();
+                var result = client.authorization().v1().selfSubjectRulesReview().create(review);
+                var rules = result.getStatus().getResourceRules();
+
+                Map<String, Set<String>> caps = new LinkedHashMap<>();
+
+                for (var rule : rules) {
+                    var resources = rule.getResources() != null ? rule.getResources() : List.<String>of();
+                    var verbs = rule.getVerbs() != null ? rule.getVerbs() : List.<String>of();
+                    var apiGroups = rule.getApiGroups() != null ? rule.getApiGroups() : List.<String>of();
+
+                    for (var typeInfo : ResourceTypeInfo.all()) {
+                        boolean groupMatch = apiGroups.contains("*") || apiGroups.contains(typeInfo.group());
+                        boolean resourceMatch = resources.contains("*") || resources.contains(typeInfo.plural());
+                        if (groupMatch && resourceMatch) {
+                            var verbSet = caps.computeIfAbsent(typeInfo.name(), k -> new LinkedHashSet<>());
+                            if (verbs.contains("*")) {
+                                verbSet.addAll(List.of("get", "list", "watch", "create", "update", "patch", "delete"));
+                            } else {
+                                verbSet.addAll(verbs);
+                            }
+                        }
+                    }
+                }
+
+                Map<String, List<String>> snapshot = new LinkedHashMap<>();
+                for (var entry : caps.entrySet()) {
+                    snapshot.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+                }
+                return new KubeResult.Success<>(snapshot);
+            }
+        } catch (Exception e) {
+            return classifyError(e, contextName);
+        }
     }
 
     private <T> KubeResult<T> rawGet(String contextName, String path, String accept,

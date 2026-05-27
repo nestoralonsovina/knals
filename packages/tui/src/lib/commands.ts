@@ -12,6 +12,7 @@ export interface Command {
   label: string
   shortcut?: string
   requires: CommandRequires
+  available?: (ctx: CommandContext) => { available: boolean; reason?: string }
   execute: (ctx: CommandContext) => void
 }
 
@@ -33,6 +34,10 @@ export function isAvailable(command: Command, ctx: CommandContext): { available:
 
   if (req.needsSelection && !ctx.selectedItem) {
     return { available: false, reason: "select a resource first" }
+  }
+
+  if (command.available) {
+    return command.available(ctx)
   }
 
   return { available: true }
@@ -97,6 +102,12 @@ const BASE_COMMANDS: Command[] = [
     requires: { screen: "resources", needsSelection: true },
     execute: () => dispatchAction("view-yaml"),
   },
+  {
+    id: "refresh-capabilities",
+    label: "Refresh Capabilities",
+    requires: { screen: "resources" },
+    execute: () => dispatchAction("refresh-capabilities"),
+  },
 ]
 
 export function buildResourceTypeCommands(types: string[]): Command[] {
@@ -104,6 +115,12 @@ export function buildResourceTypeCommands(types: string[]): Command[] {
     id: `go-${type}`,
     label: `Go to ${type.charAt(0).toUpperCase() + type.slice(1)}`,
     requires: { screen: ["namespaces", "resources"] } as CommandRequires,
+    available: (ctx: CommandContext) => {
+      if (ctx.canList && !ctx.canList(type)) {
+        return { available: false, reason: `no list access to ${type}` }
+      }
+      return { available: true }
+    },
     execute: (ctx: CommandContext) => {
       if (ctx.screen === "resources") {
         dispatchAction(`select-type:${type}`)

@@ -4,6 +4,7 @@ import { useResourceData } from "../hooks/useResourceData"
 import { usePaneNavigation } from "../hooks/usePaneNavigation"
 import { useDetailView } from "../hooks/useDetailView"
 import { useKeyboardDispatch } from "../hooks/useKeyboardDispatch"
+import { useCapabilities } from "../hooks/useCapabilities"
 import { shortName, hashSuffix, truncate, listBadge, computeDetailWidth, computeListWidth } from "../lib/resource-layout"
 import { setCommandContext, onAction } from "../lib/command-context"
 import type { Command } from "../lib/commands"
@@ -27,6 +28,7 @@ const C = {
 export function ResourcesScreen(props: { cluster: string; namespace: string; initialType?: string; registry: Accessor<Command[]> }) {
   const dims = useTerminalDimensions()
   const rd = useResourceData(() => props.cluster, () => props.namespace)
+  const caps = useCapabilities(() => props.cluster, () => props.namespace)
   const nav = usePaneNavigation()
   const detail = useDetailView()
 
@@ -60,6 +62,7 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
       namespace: props.namespace,
       resourceType: rd.activeType(),
       selectedItem: selected(),
+      canList: caps.canList,
     })
   })
 
@@ -74,6 +77,9 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
     }),
     onAction("refresh", () => {
       rd.selectType(rd.typeIdx())
+    }),
+    onAction("refresh-capabilities", () => {
+      caps.refresh()
     }),
   ]
 
@@ -131,9 +137,16 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
                   const isActive = () => i() === rd.typeIdx()
                   const isSel = () => i() === nav.sidebarCursor() && nav.pane() === "sidebar"
                   const count = () => isActive() ? ` ${rd.items().length}` : ""
+                  const accessible = () => caps.canList(rt)
+                  const fg = () => {
+                    if (!accessible()) return C.dim
+                    if (isSel()) return C.bright
+                    if (isActive()) return C.accent
+                    return C.text
+                  }
                   return (
                     <box height={1} paddingLeft={1} backgroundColor={isSel() ? C.sel : C.sidebar}>
-                      <text content={`${isActive() ? "▸" : " "} ${rt}${count()}`} fg={isSel() ? C.bright : isActive() ? C.accent : C.text} />
+                      <text content={`${isActive() ? "▸" : " "} ${rt}${count()}`} fg={fg()} />
                     </box>
                   )
                 }}

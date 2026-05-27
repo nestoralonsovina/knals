@@ -6,6 +6,7 @@ export interface CommandContext {
   namespace?: string
   resourceType?: string
   selectedItem?: { name: string }
+  canList?: (type: string) => boolean
 }
 
 const [commandContext, setCommandContext] = createSignal<CommandContext>({ screen: "clusters" })

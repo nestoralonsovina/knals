@@ -4,9 +4,7 @@ import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Alternative
@@ -17,6 +15,7 @@ public class MockKubernetesService extends KubernetesService {
     private static final Map<String, List<String>> namespaceResponses = new ConcurrentHashMap<>();
     private static final Map<String, ResourceTable> resourceTableResponses = new ConcurrentHashMap<>();
     private static final Map<String, String> resourceDetailResponses = new ConcurrentHashMap<>();
+    private static final Map<String, Map<String, List<String>>> capabilityResponses = new ConcurrentHashMap<>();
     private static final Set<String> contextNotFoundContexts = ConcurrentHashMap.newKeySet();
 
     public static void stubListNamespaces(String context, List<String> namespaces) {
@@ -33,6 +32,10 @@ public class MockKubernetesService extends KubernetesService {
         }
     }
 
+    public static void stubCapabilities(String context, String namespace, Map<String, List<String>> capabilities) {
+        capabilityResponses.put(context + "/" + namespace, capabilities);
+    }
+
     public static void stubContextNotFound(String context) {
         contextNotFoundContexts.add(context);
     }
@@ -41,6 +44,7 @@ public class MockKubernetesService extends KubernetesService {
         namespaceResponses.clear();
         resourceTableResponses.clear();
         resourceDetailResponses.clear();
+        capabilityResponses.clear();
         contextNotFoundContexts.clear();
     }
 
@@ -63,6 +67,14 @@ public class MockKubernetesService extends KubernetesService {
         var key = contextName + "/" + namespace + "/" + resourceType;
         var table = resourceTableResponses.get(key);
         return new KubeResult.Success<>(table != null ? table : new ResourceTable(resourceType, List.of(), List.of()));
+    }
+
+    @Override
+    public KubeResult<Map<String, List<String>>> selfSubjectRulesReview(String contextName, String namespace) {
+        if (contextNotFoundContexts.contains(contextName)) return new KubeResult.ContextNotFound<>(contextName);
+        var key = contextName + "/" + namespace;
+        var caps = capabilityResponses.get(key);
+        return new KubeResult.Success<>(caps != null ? caps : Map.of());
     }
 
     @Override

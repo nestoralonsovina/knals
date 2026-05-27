@@ -1,48 +1,5 @@
 {
   "openapi" : "3.1.0",
-  "components" : {
-    "schemas" : {
-      "AddNamespaceRequest" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string"
-          }
-        }
-      },
-      "Cluster" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string"
-          },
-          "server" : {
-            "type" : "string"
-          },
-          "user" : {
-            "type" : "string"
-          },
-          "connected" : {
-            "type" : "boolean"
-          }
-        }
-      },
-      "ResourceTypeInfo" : {
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string"
-          },
-          "plural" : {
-            "type" : "string"
-          },
-          "apiPath" : {
-            "type" : "string"
-          }
-        }
-      }
-    }
-  },
   "paths" : {
     "/clusters" : {
       "get" : {
@@ -184,6 +141,68 @@
         "tags" : [ "Namespace Resource" ]
       }
     },
+    "/clusters/{ctx}/namespaces/{ns}/capabilities" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "ctx",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ns",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          }
+        },
+        "summary" : "Get",
+        "tags" : [ "Capability Resource" ]
+      }
+    },
+    "/clusters/{ctx}/namespaces/{ns}/capabilities/refresh" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "ctx",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ns",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          }
+        },
+        "summary" : "Refresh",
+        "tags" : [ "Capability Resource" ]
+      }
+    },
     "/clusters/{ctx}/namespaces/{ns}/resources/{type}" : {
       "get" : {
         "parameters" : [ {
@@ -286,6 +305,49 @@
         },
         "summary" : "List",
         "tags" : [ "Resource Types Resource" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "AddNamespaceRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Cluster" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "server" : {
+            "type" : "string"
+          },
+          "user" : {
+            "type" : "string"
+          },
+          "connected" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ResourceTypeInfo" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "plural" : {
+            "type" : "string"
+          },
+          "apiPath" : {
+            "type" : "string"
+          }
+        }
       }
     }
   },

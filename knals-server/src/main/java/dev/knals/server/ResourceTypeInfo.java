@@ -38,4 +38,9 @@ public record ResourceTypeInfo(
     public static boolean isValid(String name) {
         return find(name) != null;
     }
+
+    public String group() {
+        if (apiPath.equals("/api/v1")) return "";
+        return apiPath.replaceFirst("^/apis/", "").replaceFirst("/v[0-9]+.*$", "");
+    }
 }
