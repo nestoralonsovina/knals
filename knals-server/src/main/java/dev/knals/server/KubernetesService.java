@@ -1,22 +1,20 @@
 package dev.knals.server;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.http.HttpResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
 import java.util.List;
 
 @ApplicationScoped
 public class KubernetesService {
 
     private static final int TIMEOUT_MS = 5000;
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static boolean isValidResourceType(String type) {
         return ResourceTypeInfo.isValid(type);
@@ -31,7 +29,7 @@ public class KubernetesService {
                 return new KubeResult.Success<>(names);
             }
         } catch (Exception e) {
-            return classifyError(e);
+            return classifyError(e, contextName);
         }
     }
 
@@ -42,72 +40,59 @@ public class KubernetesService {
                 return new KubeResult.Success<>(ns != null);
             }
         } catch (Exception e) {
-            return classifyError(e);
+            return classifyError(e, contextName);
         }
     }
 
     public KubeResult<ResourceTable> listResources(String contextName, String namespace, String resourceType) {
-        try {
-            var config = buildConfig(contextName);
-            var typeInfo = ResourceTypeInfo.find(resourceType);
-            var masterUrl = config.getMasterUrl().replaceAll("/$", "");
-            var url = masterUrl + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural();
+        var typeInfo = ResourceTypeInfo.find(resourceType);
+        var path = typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural();
 
-            try (var client = new KubernetesClientBuilder().withConfig(config).build()) {
-                var httpClient = client.getHttpClient();
-                var request = httpClient.newHttpRequestBuilder()
-                        .uri(url)
-                        .header("Accept", "application/json;as=Table;g=meta.k8s.io;v=v1")
-                        .build();
-                var response = httpClient.sendAsync(request, byte[].class).get();
-
-                if (response.code() == 403) {
-                    return new KubeResult.Forbidden<>("Cannot list " + resourceType + " in " + namespace);
-                }
-                if (response.code() == 404) {
-                    return new KubeResult.NotFound<>(resourceType + " in " + namespace);
-                }
-                if (response.code() != 200) {
-                    return new KubeResult.Unreachable<>("HTTP " + response.code());
-                }
-
-                return new KubeResult.Success<>(parseTableResponse(resourceType, response.body()));
-            }
-        } catch (Exception e) {
-            return classifyError(e);
-        }
+        return rawGet(contextName, path, "application/json;as=Table;g=meta.k8s.io;v=v1",
+                body -> ResourceTable.fromTableApiResponse(resourceType, body),
+                "list " + resourceType + " in " + namespace);
     }
 
     public KubeResult<String> getResource(String contextName, String namespace, String resourceType, String name) {
+        var typeInfo = ResourceTypeInfo.find(resourceType);
+        var path = typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural() + "/" + name;
+
+        return rawGet(contextName, path, "application/json",
+                body -> new String(body),
+                resourceType + "/" + name);
+    }
+
+    private <T> KubeResult<T> rawGet(String contextName, String path, String accept,
+                                     ThrowingFunction<byte[], T> parser, String description) {
         try {
             var config = buildConfig(contextName);
-            var typeInfo = ResourceTypeInfo.find(resourceType);
             var masterUrl = config.getMasterUrl().replaceAll("/$", "");
-            var url = masterUrl + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural() + "/" + name;
 
             try (var client = new KubernetesClientBuilder().withConfig(config).build()) {
-                var httpClient = client.getHttpClient();
-                var request = httpClient.newHttpRequestBuilder()
-                        .uri(url)
-                        .header("Accept", "application/json")
-                        .build();
-                var response = httpClient.sendAsync(request, byte[].class).get();
+                var response = client.getHttpClient()
+                        .sendAsync(
+                                client.getHttpClient().newHttpRequestBuilder()
+                                        .uri(masterUrl + path)
+                                        .header("Accept", accept)
+                                        .build(),
+                                byte[].class
+                        ).get();
 
-                if (response.code() == 403) {
-                    return new KubeResult.Forbidden<>("Cannot get " + resourceType + "/" + name);
-                }
-                if (response.code() == 404) {
-                    return new KubeResult.NotFound<>(resourceType + "/" + name);
-                }
-                if (response.code() != 200) {
-                    return new KubeResult.Unreachable<>("HTTP " + response.code());
-                }
-
-                return new KubeResult.Success<>(new String(response.body()));
+                return mapResponse(response, parser, description);
             }
         } catch (Exception e) {
-            return classifyError(e);
+            return classifyError(e, contextName);
         }
+    }
+
+    private <T> KubeResult<T> mapResponse(HttpResponse<byte[]> response,
+                                           ThrowingFunction<byte[], T> parser, String description) throws Exception {
+        return switch (response.code()) {
+            case 200 -> new KubeResult.Success<>(parser.apply(response.body()));
+            case 403 -> new KubeResult.Forbidden<>("Cannot " + description);
+            case 404 -> new KubeResult.NotFound<>(description);
+            default -> new KubeResult.Unreachable<>("HTTP " + response.code());
+        };
     }
 
     private Config buildConfig(String contextName) {
@@ -121,7 +106,7 @@ public class KubernetesService {
         return new KubernetesClientBuilder().withConfig(buildConfig(contextName)).build();
     }
 
-    private <T> KubeResult<T> classifyError(Exception e) {
+    private <T> KubeResult<T> classifyError(Exception e, String contextName) {
         var root = rootCause(e);
         if (root instanceof KubernetesClientException kce) {
             if (kce.getCode() == 403) return new KubeResult.Forbidden<>(kce.getMessage());
@@ -130,10 +115,10 @@ public class KubernetesService {
         if (root instanceof ConnectException || root instanceof SocketTimeoutException) {
             return new KubeResult.Unreachable<>(root.getMessage());
         }
-        if (e.getMessage() != null && e.getMessage().contains("context")) {
-            return new KubeResult.NotFound<>(e.getMessage());
+        if (root instanceof IllegalArgumentException || root instanceof io.fabric8.kubernetes.client.KubernetesClientException) {
+            return new KubeResult.ContextNotFound<>(contextName);
         }
-        return new KubeResult.Unreachable<>(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+        return new KubeResult.Unreachable<>(root.getMessage() != null ? root.getMessage() : root.getClass().getSimpleName());
     }
 
     private Throwable rootCause(Throwable t) {
@@ -141,31 +126,8 @@ public class KubernetesService {
         return t;
     }
 
-    private ResourceTable parseTableResponse(String resourceType, byte[] body) throws Exception {
-        var root = MAPPER.readTree(body);
-
-        var columns = new ArrayList<String>();
-        var columnDefs = root.path("columnDefinitions");
-        for (var col : columnDefs) {
-            columns.add(col.path("name").asText());
-        }
-
-        var items = new ArrayList<ResourceTable.ResourceRow>();
-        var rows = root.path("rows");
-        for (var row : rows) {
-            var cells = new ArrayList<String>();
-            for (var cell : row.path("cells")) {
-                cells.add(cell.isNull() ? "" : cell.asText());
-            }
-
-            var obj = row.path("object").path("metadata");
-            var rowName = obj.path("name").asText("");
-            var ns = obj.path("namespace").asText("");
-            var ts = obj.path("creationTimestamp").asText("");
-
-            items.add(new ResourceTable.ResourceRow(rowName, ns, cells, ts));
-        }
-
-        return new ResourceTable(resourceType, columns, items);
+    @FunctionalInterface
+    interface ThrowingFunction<I, O> {
+        O apply(I input) throws Exception;
     }
 }

@@ -59,6 +59,7 @@ public class NamespaceResource {
                 Response.status(Response.Status.BAD_GATEWAY)
                         .entity("{\"error\": \"" + u.reason() + "\"}")
                         .build();
+            case KubeResult.ContextNotFound<?> c -> Response.ok(List.of()).build();
         };
     }
 }
