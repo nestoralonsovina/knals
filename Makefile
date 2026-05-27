@@ -1,4 +1,4 @@
-.PHONY: dev-server dev-tui openapi build test test-all native cluster-up cluster-down
+.PHONY: dev-server dev-tui openapi build test test-all native start cluster-up cluster-down
 
 dev-server:
 	@./mvnw -pl knals-server quarkus:dev
@@ -26,6 +26,10 @@ test-all: test
 
 native:
 	@./mvnw package -Pnative -DskipTests -pl knals-server
+
+start:
+	@./mvnw install -DskipTests -q
+	@bun --cwd packages/launcher src/index.ts
 
 cluster-up:
 	@cd test && bun run cluster:up

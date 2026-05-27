@@ -1,0 +1,16 @@
+{
+  "name": "@knals/launcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'Launcher runs directly with bun — no build step needed'",
+    "test": "bun test",
+    "start": "bun src/index.ts"
+  },
+  "dependencies": {
+    "@knals/sdk": "workspace:*",
+    "@knals/tui": "workspace:*"
+  }
+}
