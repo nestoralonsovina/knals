@@ -30,9 +30,6 @@ function resolveServerCommand(): string {
   const distBinary = resolve(SELF_DIR, "knals-server")
   if (existsSync(distBinary)) return `${distBinary} -Dquarkus.http.port=__PORT__`
 
-  const devBinary = resolve(ROOT_DIR, "knals-server/target/knals-server-0.1.0-SNAPSHOT-runner")
-  if (existsSync(devBinary)) return `${devBinary} -Dquarkus.http.port=__PORT__`
-
   const jvmJar = resolve(ROOT_DIR, "knals-server/target/quarkus-app/quarkus-run.jar")
   return `java -Dquarkus.http.port=__PORT__ -jar ${jvmJar}`
 }
