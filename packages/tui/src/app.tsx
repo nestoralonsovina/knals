@@ -63,7 +63,7 @@ export function App() {
       case "namespaces":
         return "j/k navigate  Enter select  a add  d delete  r discover  Esc back  q quit"
       case "resources":
-        return "j/k navigate  h/l switch type  Esc back  q quit"
+        return "j/k navigate  h/l switch type  Enter detail  Esc back  q quit"
     }
   }
 

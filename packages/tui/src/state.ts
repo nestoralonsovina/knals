@@ -1,6 +1,10 @@
 import { createSignal } from "solid-js"
 
-export const RESOURCE_TYPES = ["pods", "deployments", "services"] as const
+export const RESOURCE_TYPES = [
+  "pods", "deployments", "replicasets", "statefulsets", "daemonsets",
+  "jobs", "cronjobs", "services", "ingresses", "configmaps",
+  "secrets", "pvcs", "serviceaccounts", "events",
+] as const
 export type ResourceType = (typeof RESOURCE_TYPES)[number]
 
 export type Route =

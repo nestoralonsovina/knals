@@ -106,3 +106,40 @@ export type DeleteClustersByCtxNamespacesByNsResponses = {
      */
     200: unknown;
 };
+
+export type GetClustersByCtxNamespacesByNsResourcesByTypeData = {
+    body?: never;
+    path: {
+        ctx: string;
+        ns: string;
+        type: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces/{ns}/resources/{type}';
+};
+
+export type GetClustersByCtxNamespacesByNsResourcesByTypeResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetClustersByCtxNamespacesByNsResourcesByTypeByNameData = {
+    body?: never;
+    path: {
+        ctx: string;
+        name: string;
+        ns: string;
+        type: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces/{ns}/resources/{type}/{name}';
+};
+
+export type GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
