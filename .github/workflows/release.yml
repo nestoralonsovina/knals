@@ -45,7 +45,7 @@ jobs:
       - name: Build distribution
         run: make dist
         env:
-          QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS: -J-Xmx5g
+          QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS: -Ob,--gc=epsilon,-J-Xmx5g
 
       - name: Package tarball
         run: |
