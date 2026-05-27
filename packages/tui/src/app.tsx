@@ -1,4 +1,4 @@
-import { createSignal, createResource, Match, Switch } from "solid-js"
+import { createSignal, createResource, Match, Show, Switch } from "solid-js"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { checkHealth, getClusters, client } from "@knals/sdk"
 import type { Cluster } from "@knals/sdk"
@@ -33,7 +33,8 @@ export function App() {
 
   useKeyboard((key) => {
     if (key.name === "escape" || key.name === "backspace") {
-      if (route().screen === "clusters") return
+      const screen = route().screen
+      if (screen === "clusters" || screen === "resources" || screen === "detail") return
       goBack()
     }
     if (key.name === "q") {
@@ -64,9 +65,8 @@ export function App() {
       case "namespaces":
         return "j/k navigate  Enter select  a add  d delete  r discover  Esc back  q quit"
       case "resources":
-        return "j/k navigate  h/l switch type  Enter detail  Esc back  q quit"
       case "detail":
-        return "j/k scroll  g top  Esc back  q quit"
+        return ""
     }
   }
 
@@ -117,10 +117,12 @@ export function App() {
         </Match>
       </Switch>
 
-      <box height={1} flexDirection="row" alignItems="center" padding={1} gap={2}>
-        <text content={statusText()} fg={statusColor()} />
-        <text content={helpText()} fg="#64748b" />
-      </box>
+      <Show when={route().screen !== "resources" && route().screen !== "detail"}>
+        <box height={1} flexDirection="row" alignItems="center" padding={1} gap={2}>
+          <text content={statusText()} fg={statusColor()} />
+          <text content={helpText()} fg="#64748b" />
+        </box>
+      </Show>
     </box>
   )
 }
