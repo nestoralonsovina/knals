@@ -1,0 +1,6 @@
+[submodule "packages/tui/hunk"]
+	path = packages/tui/hunk
+	url = https://github.com/modem-dev/hunk.git
+[submodule "k9s"]
+	path = k9s
+	url = https://github.com/derailed/k9s.git
