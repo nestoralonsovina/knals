@@ -45,7 +45,7 @@ jobs:
         run: bun run build
 
       - name: Run TypeScript tests
-        run: bun run test
+        run: bunx turbo run test --filter='!@knals/e2e'
 
       - name: Check OpenAPI spec and SDK are in sync
         run: |

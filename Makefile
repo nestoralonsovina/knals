@@ -25,7 +25,7 @@ test-all: test
 	@cd test && bun run test:ci
 
 native:
-	@./mvnw package -Pnative -DskipTests -pl knals-server
+	@./mvnw package -Pnative -DskipTests -pl knals-server -am
 
 start:
 	@./mvnw install -DskipTests -q
