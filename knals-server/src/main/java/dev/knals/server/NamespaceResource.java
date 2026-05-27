@@ -14,6 +14,9 @@ public class NamespaceResource {
     @Inject
     NamespaceMemoryStore store;
 
+    @Inject
+    KubernetesService kubernetesService;
+
     @GET
     public List<String> list(@PathParam("ctx") String ctx) {
         return store.list(ctx);
@@ -39,5 +42,12 @@ public class NamespaceResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/discover")
+    public List<String> discover(@PathParam("ctx") String ctx) {
+        var discovered = kubernetesService.listNamespaces(ctx);
+        return store.addAll(ctx, discovered);
     }
 }

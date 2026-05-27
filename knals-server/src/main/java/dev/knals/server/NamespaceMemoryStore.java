@@ -39,6 +39,22 @@ public class NamespaceMemoryStore {
         }
     }
 
+    public List<String> addAll(String clusterContext, List<String> namespaces) {
+        var data = load();
+        var existing = data.computeIfAbsent(clusterContext, k -> new ArrayList<>());
+        var added = new ArrayList<String>();
+        for (var ns : namespaces) {
+            if (!existing.contains(ns)) {
+                existing.add(ns);
+                added.add(ns);
+            }
+        }
+        if (!added.isEmpty()) {
+            save(data);
+        }
+        return added;
+    }
+
     public boolean remove(String clusterContext, String namespace) {
         var data = load();
         var namespaces = data.get(clusterContext);

@@ -115,6 +115,35 @@
         "tags" : [ "Namespace Resource" ]
       }
     },
+    "/clusters/{ctx}/namespaces/discover" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "ctx",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Discover",
+        "tags" : [ "Namespace Resource" ]
+      }
+    },
     "/clusters/{ctx}/namespaces/{ns}" : {
       "delete" : {
         "parameters" : [ {

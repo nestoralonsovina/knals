@@ -1,9 +1,10 @@
-import { createSignal, createResource, Show } from "solid-js"
+import { createSignal, createResource, onMount, Show } from "solid-js"
 import type { SelectOption } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
 import {
   getClustersByCtxNamespaces,
   postClustersByCtxNamespaces,
+  postClustersByCtxNamespacesDiscover,
   deleteClustersByCtxNamespacesByNs,
 } from "@knals/sdk"
 import { navigateTo } from "../app"
@@ -16,6 +17,32 @@ export function NamespacesScreen(props: { cluster: string }) {
       return result.data ?? []
     }
   )
+
+  const [discovered, setDiscovered] = createSignal(false)
+
+  onMount(() => {
+    discoverNamespaces()
+  })
+
+  async function discoverNamespaces() {
+    try {
+      const result = await postClustersByCtxNamespacesDiscover({
+        path: { ctx: props.cluster },
+      })
+      const newOnes = (result.data as string[] | undefined) ?? []
+      if (newOnes.length > 0) {
+        showStatus(`Discovered ${newOnes.length} namespace${newOnes.length > 1 ? "s" : ""}`)
+        refetch()
+      } else if (!discovered()) {
+        showStatus("No namespaces discovered")
+      }
+    } catch {
+      if (!discovered()) {
+        showStatus("Discovery unavailable")
+      }
+    }
+    setDiscovered(true)
+  }
 
   const [inputMode, setInputMode] = createSignal(false)
   const [inputValue, setInputValue] = createSignal("")
@@ -53,6 +80,10 @@ export function NamespacesScreen(props: { cluster: string }) {
       setInputMode(true)
       setInputValue("")
       setInputError("")
+    }
+
+    if (key.name === "r") {
+      discoverNamespaces()
     }
 
     if (key.name === "d") {

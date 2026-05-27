@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
+import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesDiscoverData, PostClustersByCtxNamespacesDiscoverResponses, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -49,6 +49,16 @@ export const postClustersByCtxNamespaces = <ThrowOnError extends boolean = false
             'Content-Type': 'application/json',
             ...options.headers
         }
+    });
+};
+
+/**
+ * Discover
+ */
+export const postClustersByCtxNamespacesDiscover = <ThrowOnError extends boolean = false>(options: Options<PostClustersByCtxNamespacesDiscoverData, ThrowOnError>) => {
+    return (options.client ?? client).post<PostClustersByCtxNamespacesDiscoverResponses, unknown, ThrowOnError>({
+        url: '/clusters/{ctx}/namespaces/discover',
+        ...options
     });
 };
 

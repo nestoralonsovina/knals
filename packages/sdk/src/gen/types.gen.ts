@@ -72,6 +72,24 @@ export type PostClustersByCtxNamespacesResponses = {
     200: unknown;
 };
 
+export type PostClustersByCtxNamespacesDiscoverData = {
+    body?: never;
+    path: {
+        ctx: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces/discover';
+};
+
+export type PostClustersByCtxNamespacesDiscoverResponses = {
+    /**
+     * OK
+     */
+    200: Array<string>;
+};
+
+export type PostClustersByCtxNamespacesDiscoverResponse = PostClustersByCtxNamespacesDiscoverResponses[keyof PostClustersByCtxNamespacesDiscoverResponses];
+
 export type DeleteClustersByCtxNamespacesByNsData = {
     body?: never;
     path: {

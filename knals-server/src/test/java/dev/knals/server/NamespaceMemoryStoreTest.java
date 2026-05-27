@@ -88,6 +88,29 @@ class NamespaceMemoryStoreTest {
     }
 
     @Test
+    void addAllMergesNewNamespaces() {
+        store.add("my-cluster", "existing");
+        List<String> added = store.addAll("my-cluster", List.of("existing", "new-one", "new-two"));
+        assertEquals(List.of("new-one", "new-two"), added);
+        assertEquals(3, store.list("my-cluster").size());
+    }
+
+    @Test
+    void addAllReturnsEmptyWhenAllKnown() {
+        store.add("my-cluster", "ns-a");
+        store.add("my-cluster", "ns-b");
+        List<String> added = store.addAll("my-cluster", List.of("ns-a", "ns-b"));
+        assertTrue(added.isEmpty());
+    }
+
+    @Test
+    void addAllOnEmptyStore() {
+        List<String> added = store.addAll("my-cluster", List.of("ns-a", "ns-b"));
+        assertEquals(List.of("ns-a", "ns-b"), added);
+        assertEquals(List.of("ns-a", "ns-b"), store.list("my-cluster"));
+    }
+
+    @Test
     void createsConfigDirectoryIfMissing() {
         Path nested = tempDir.resolve("sub/dir");
         var nestedStore = new NamespaceMemoryStore(nested.toString());
