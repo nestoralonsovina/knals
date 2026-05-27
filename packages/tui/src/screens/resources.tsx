@@ -1,9 +1,9 @@
 import { createMemo, createEffect, Show, For } from "solid-js"
-import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
-import { navigateTo } from "../app"
+import { useTerminalDimensions } from "@opentui/solid"
 import { useResourceData } from "../hooks/useResourceData"
 import { usePaneNavigation } from "../hooks/usePaneNavigation"
 import { useDetailView } from "../hooks/useDetailView"
+import { useKeyboardDispatch } from "../hooks/useKeyboardDispatch"
 import { shortName, hashSuffix, truncate, listBadge, computeDetailWidth, computeListWidth } from "../lib/resource-layout"
 
 const C = {
@@ -18,7 +18,6 @@ const C = {
   dim: "#475569",
   detailBg: "#0d1117",
   logBg: "#0a0a1a",
-  section: "#94a3b8",
   hashFg: "#475569",
   sel: "#1e3a5f",
 }
@@ -45,60 +44,10 @@ export function ResourcesScreen(props: { cluster: string; namespace: string }) {
     detail.resetOnTypeChange()
   })
 
-  useKeyboard((key) => {
-    if (key.name === "escape") {
-      if (detail.logsExpanded()) { detail.toggleLogsExpanded(); return }
-      if (detail.detailView() === "logs") { detail.toggleLogs(); return }
-      if (detail.detailOpen()) { detail.closeDetail(); nav.focusList(); return }
-      if (nav.pane() === "sidebar") { nav.focusList(); return }
-      navigateTo({ screen: "namespaces", cluster: props.cluster })
-      return
-    }
-
-    if (key.name === "tab") { nav.cyclePane(detail.detailOpen(), detail.logsExpanded()); return }
-    if (key.raw === "C") { navigateTo({ screen: "clusters" }); return }
-    if (key.raw === "N") { navigateTo({ screen: "namespaces", cluster: props.cluster }); return }
-    if (key.raw === "[") { nav.resizeSidebar(-2); return }
-    if (key.raw === "]") { nav.resizeSidebar(2); return }
-
-    if (nav.pane() === "sidebar") {
-      if (key.name === "j" || key.name === "down") nav.moveSidebarCursor(1, rd.resourceTypes().length - 1)
-      if (key.name === "k" || key.name === "up") nav.moveSidebarCursor(-1, rd.resourceTypes().length - 1)
-      if (key.name === "return" || key.name === "l" || key.name === "right") {
-        rd.selectType(nav.sidebarCursor())
-        nav.resetRow()
-        detail.resetOnTypeChange()
-        nav.focusList()
-      }
-    }
-
-    if (nav.pane() === "list") {
-      if (key.name === "j" || key.name === "down") nav.moveRow(1, rd.items().length - 1)
-      if (key.name === "k" || key.name === "up") nav.moveRow(-1, rd.items().length - 1)
-      if (key.name === "h" || key.name === "left") nav.focusSidebar()
-      if (key.name === "l" || key.name === "right") { if (detail.detailOpen()) nav.focusDetail() }
-      if (key.name === "return") {
-        const item = selected()
-        if (item) {
-          detail.openDetail()
-          nav.focusDetail()
-          rd.fetchDetail(item.name)
-        }
-      }
-      if (key.name === "g") nav.resetRow()
-      if (key.raw === "G") nav.jumpToEnd(Math.max(0, rd.items().length - 1))
-    }
-
-    if (nav.pane() === "detail") {
-      if (key.name === "h" || key.name === "left") { if (!detail.logsExpanded()) nav.focusList() }
-      if (key.raw === "L" || key.raw === "l") detail.toggleLogs()
-      if (key.raw === "F") detail.toggleLogsExpanded()
-      if (detail.detailView() === "info") {
-        if (key.name === "j" || key.name === "down") rd.setDetailScroll(s => s + 1)
-        if (key.name === "k" || key.name === "up") rd.setDetailScroll(s => Math.max(0, s - 1))
-        if (key.name === "g") rd.setDetailScroll(0)
-      }
-    }
+  useKeyboardDispatch({
+    cluster: props.cluster,
+    pane: nav.pane,
+    nav, detail, rd, selected,
   })
 
   const detailContent = () => {

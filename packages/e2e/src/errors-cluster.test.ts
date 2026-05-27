@@ -2,6 +2,9 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test"
 import { isClusterRunning, clusterUp, kubeconfigPath } from "./cluster"
 import { startServer, stopServer, getServerUrl } from "./harness"
 import { client, getClusters } from "@knals/sdk"
+import { mkdtempSync } from "node:fs"
+import { join } from "node:path"
+import { tmpdir } from "node:os"
 
 describe("error classification with namespace-only persona", () => {
   let clusterCtx: string
@@ -87,4 +90,26 @@ describe("error classification with full-access persona", () => {
     const data = await resp.json()
     expect(data.items).toEqual([])
   })
+})
+
+describe("502 unreachable cluster", () => {
+  const configDir = mkdtempSync(join(tmpdir(), "knals-e2e-errors-502-"))
+
+  beforeAll(async () => {
+    const server = await startServer({
+      env: { KNALS_CONFIG_DIR: configDir },
+    })
+    client.setConfig({ baseUrl: server.url })
+  }, 120_000)
+
+  afterAll(() => {
+    stopServer()
+  })
+
+  it("returns 502 when server has no valid KUBECONFIG", async () => {
+    const resp = await fetch(
+      `${getServerUrl()}/clusters/nonexistent-ctx/namespaces/default/resources/pods`
+    )
+    expect([404, 502]).toContain(resp.status)
+  }, 30_000)
 })

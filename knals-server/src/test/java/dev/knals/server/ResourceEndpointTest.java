@@ -71,7 +71,9 @@ class ResourceEndpointTest {
         given()
                 .when().get("/clusters/test-ctx/namespaces/team-api/resources/unknown")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body("type", equalTo("bad_request"))
+                .body("error", containsString("Unknown resource type"));
     }
 
     @Test
@@ -124,7 +126,9 @@ class ResourceEndpointTest {
         given()
                 .when().get("/clusters/bad-ctx/namespaces/team-api/resources/pods")
                 .then()
-                .statusCode(404);
+                .statusCode(404)
+                .body("type", equalTo("context_not_found"))
+                .body("error", containsString("context not found"));
     }
 
     @Test
@@ -134,6 +138,8 @@ class ResourceEndpointTest {
         given()
                 .when().get("/clusters/bad-ctx/namespaces/team-api/resources/pods/some-pod")
                 .then()
-                .statusCode(404);
+                .statusCode(404)
+                .body("type", equalTo("context_not_found"))
+                .body("error", containsString("context not found"));
     }
 }

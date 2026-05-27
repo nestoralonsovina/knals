@@ -172,3 +172,36 @@ describe("resource detail with full-access persona", () => {
     expect(resp.status).toBe(404)
   })
 })
+
+describe("resource list with namespace-only persona", () => {
+  let nsOnlyCtx: string
+
+  beforeAll(async () => {
+    const kubeconfig = kubeconfigPath("namespace-only")
+    const server = await startServer({ env: { KUBECONFIG: kubeconfig } })
+    client.setConfig({ baseUrl: server.url })
+
+    const clusters = await getClusters()
+    nsOnlyCtx = clusters.data!.find((c) => c.name?.includes("knals-test"))!.name!
+  }, 300_000)
+
+  afterAll(() => {
+    stopServer()
+  })
+
+  it("returns 200 with real data in authorized namespace (team-api)", async () => {
+    const resp = await fetch(
+      `${getServerUrl()}/clusters/${nsOnlyCtx}/namespaces/team-api/resources/pods`
+    )
+    expect(resp.status).toBe(200)
+    const data = await resp.json()
+    expect(data.items.length).toBeGreaterThan(0)
+  })
+
+  it("returns 403 for unauthorized namespace (team-billing)", async () => {
+    const resp = await fetch(
+      `${getServerUrl()}/clusters/${nsOnlyCtx}/namespaces/team-billing/resources/pods`
+    )
+    expect(resp.status).toBe(403)
+  })
+})
