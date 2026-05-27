@@ -121,6 +121,15 @@ knals/
 └── install.sh                     # curl-to-shell installer
 ```
 
+## Known limitations
+
+The release tarball is ~53MB compressed (~138MB on disk). Most of this comes from two fixed costs:
+
+- **Bun runtime** (~55MB) — `bun build --compile` embeds the entire Bun runtime. There's no slim mode yet ([tracking issue](https://github.com/oven-sh/bun/issues/14546)).
+- **GraalVM native binary** (~74MB) — the fabric8 kubernetes-client registers hundreds of Kubernetes model classes for reflection, which GraalVM bakes into the binary.
+
+A future simplification could drop the Java server entirely and talk to kubectl directly from the TypeScript TUI, cutting the binary roughly in half.
+
 ## Inspirations
 
 - [k9s](https://github.com/derailed/k9s) — feature reference
@@ -129,4 +138,4 @@ knals/
 
 ## License
 
-TBD.
+MIT
