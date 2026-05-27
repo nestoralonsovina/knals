@@ -60,7 +60,7 @@ export function App() {
       case "clusters":
         return "j/k navigate  Enter select  q quit"
       case "namespaces":
-        return "j/k navigate  Enter select  Esc back  q quit"
+        return "j/k navigate  Enter select  a add  d delete  Esc back  q quit"
       case "resources":
         return "j/k navigate  h/l switch type  Esc back  q quit"
     }

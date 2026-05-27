@@ -2,6 +2,14 @@
   "openapi" : "3.1.0",
   "components" : {
     "schemas" : {
+      "AddNamespaceRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
       "Cluster" : {
         "type" : "object",
         "properties" : {
@@ -41,6 +49,101 @@
         },
         "summary" : "List",
         "tags" : [ "Cluster Resource" ]
+      }
+    },
+    "/clusters/{ctx}/namespaces" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "ctx",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Namespace Resource" ]
+      },
+      "post" : {
+        "parameters" : [ {
+          "name" : "ctx",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddNamespaceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add",
+        "tags" : [ "Namespace Resource" ]
+      }
+    },
+    "/clusters/{ctx}/namespaces/{ns}" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "ctx",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ns",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          }
+        },
+        "summary" : "Remove",
+        "tags" : [ "Namespace Resource" ]
       }
     }
   },

@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetClustersData, GetClustersResponses } from './types.gen';
+import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -24,6 +24,40 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const getClusters = <ThrowOnError extends boolean = false>(options?: Options<GetClustersData, ThrowOnError>) => {
     return (options?.client ?? client).get<GetClustersResponses, unknown, ThrowOnError>({
         url: '/clusters',
+        ...options
+    });
+};
+
+/**
+ * List
+ */
+export const getClustersByCtxNamespaces = <ThrowOnError extends boolean = false>(options: Options<GetClustersByCtxNamespacesData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetClustersByCtxNamespacesResponses, unknown, ThrowOnError>({
+        url: '/clusters/{ctx}/namespaces',
+        ...options
+    });
+};
+
+/**
+ * Add
+ */
+export const postClustersByCtxNamespaces = <ThrowOnError extends boolean = false>(options: Options<PostClustersByCtxNamespacesData, ThrowOnError>) => {
+    return (options.client ?? client).post<PostClustersByCtxNamespacesResponses, PostClustersByCtxNamespacesErrors, ThrowOnError>({
+        url: '/clusters/{ctx}/namespaces',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+};
+
+/**
+ * Remove
+ */
+export const deleteClustersByCtxNamespacesByNs = <ThrowOnError extends boolean = false>(options: Options<DeleteClustersByCtxNamespacesByNsData, ThrowOnError>) => {
+    return (options.client ?? client).delete<DeleteClustersByCtxNamespacesByNsResponses, unknown, ThrowOnError>({
+        url: '/clusters/{ctx}/namespaces/{ns}',
         ...options
     });
 };

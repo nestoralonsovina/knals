@@ -4,6 +4,10 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:8080' | 'http://0.0.0.0:8080' | (string & {});
 };
 
+export type AddNamespaceRequest = {
+    name?: string;
+};
+
 export type Cluster = {
     name?: string;
     server?: string;
@@ -26,3 +30,61 @@ export type GetClustersResponses = {
 };
 
 export type GetClustersResponse = GetClustersResponses[keyof GetClustersResponses];
+
+export type GetClustersByCtxNamespacesData = {
+    body?: never;
+    path: {
+        ctx: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces';
+};
+
+export type GetClustersByCtxNamespacesResponses = {
+    /**
+     * OK
+     */
+    200: Array<string>;
+};
+
+export type GetClustersByCtxNamespacesResponse = GetClustersByCtxNamespacesResponses[keyof GetClustersByCtxNamespacesResponses];
+
+export type PostClustersByCtxNamespacesData = {
+    body: AddNamespaceRequest;
+    path: {
+        ctx: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces';
+};
+
+export type PostClustersByCtxNamespacesErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostClustersByCtxNamespacesResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type DeleteClustersByCtxNamespacesByNsData = {
+    body?: never;
+    path: {
+        ctx: string;
+        ns: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces/{ns}';
+};
+
+export type DeleteClustersByCtxNamespacesByNsResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
