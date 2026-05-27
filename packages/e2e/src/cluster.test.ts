@@ -15,9 +15,8 @@ beforeAll(async () => {
   client.setConfig({ baseUrl: server.url })
 }, 300_000)
 
-afterAll(async () => {
+afterAll(() => {
   stopServer()
-  await clusterDown()
 })
 
 describe("cluster integration with namespace-only persona", () => {
