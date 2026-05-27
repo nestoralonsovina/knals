@@ -1,13 +1,22 @@
 import { ServerManager } from "./server-manager"
 import { resolve } from "node:path"
+import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 
 const ROOT_DIR = resolve(import.meta.dir, "../../..")
-const DEFAULT_SERVER_CMD = `java -Dquarkus.http.port=__PORT__ -jar ${resolve(ROOT_DIR, "knals-server/target/quarkus-app/quarkus-run.jar")}`
+const NATIVE_BINARY = resolve(ROOT_DIR, "knals-server/target/knals-server-0.1.0-SNAPSHOT-runner")
+const JVM_JAR = resolve(ROOT_DIR, "knals-server/target/quarkus-app/quarkus-run.jar")
 const CONFIG_DIR = process.env.KNALS_CONFIG_DIR ?? resolve(homedir(), ".config/knals")
 
+function resolveServerCommand(): string {
+  if (process.env.KNALS_SERVER_CMD) return process.env.KNALS_SERVER_CMD
+  if (existsSync(NATIVE_BINARY)) return `${NATIVE_BINARY} -Dquarkus.http.port=__PORT__`
+  return `java -Dquarkus.http.port=__PORT__ -jar ${JVM_JAR}`
+}
+
 async function main() {
-  const serverCmd = process.env.KNALS_SERVER_CMD ?? DEFAULT_SERVER_CMD
+  const serverCmd = resolveServerCommand()
+  const isNative = serverCmd.includes("-runner")
 
   const server = new ServerManager({
     command: serverCmd,
@@ -25,7 +34,7 @@ async function main() {
   })
 
   try {
-    console.log("Starting knals server...")
+    console.log(`Starting knals server (${isNative ? "native" : "JVM"})...`)
     const { url } = await server.start()
     console.log(`Server ready at ${url}`)
 
