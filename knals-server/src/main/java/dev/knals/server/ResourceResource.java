@@ -20,10 +20,10 @@ public class ResourceResource {
             @PathParam("type") String type) {
         if (!KubernetesService.isValidResourceType(type)) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"Unknown resource type: " + type + "\"}")
+                    .entity(new KubeResultMapper.ErrorBody("bad_request", "Unknown resource type: " + type))
                     .build();
         }
-        return toResponse(kubernetesService.listResources(ctx, ns, type));
+        return KubeResultMapper.toResponse(kubernetesService.listResources(ctx, ns, type));
     }
 
     @GET
@@ -35,31 +35,9 @@ public class ResourceResource {
             @PathParam("name") String name) {
         if (!KubernetesService.isValidResourceType(type)) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"Unknown resource type: " + type + "\"}")
+                    .entity(new KubeResultMapper.ErrorBody("bad_request", "Unknown resource type: " + type))
                     .build();
         }
-        return toResponse(kubernetesService.getResource(ctx, ns, type, name));
-    }
-
-    private <T> Response toResponse(KubeResult<T> result) {
-        return switch (result) {
-            case KubeResult.Success<T> s -> Response.ok(s.value()).build();
-            case KubeResult.Forbidden<?> f ->
-                Response.status(Response.Status.FORBIDDEN)
-                        .entity("{\"error\": \"" + f.message() + "\"}")
-                        .build();
-            case KubeResult.NotFound<?> n ->
-                Response.status(Response.Status.NOT_FOUND)
-                        .entity("{\"error\": \"" + n.what() + "\"}")
-                        .build();
-            case KubeResult.Unreachable<?> u ->
-                Response.status(Response.Status.BAD_GATEWAY)
-                        .entity("{\"error\": \"" + u.reason() + "\"}")
-                        .build();
-            case KubeResult.ContextNotFound<?> c ->
-                Response.status(Response.Status.NOT_FOUND)
-                        .entity("{\"error\": \"context not found: " + c.context() + "\"}")
-                        .build();
-        };
+        return KubeResultMapper.toResponse(kubernetesService.getResource(ctx, ns, type, name));
     }
 }

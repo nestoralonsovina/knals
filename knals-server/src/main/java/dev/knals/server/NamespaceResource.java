@@ -27,7 +27,7 @@ public class NamespaceResource {
     public Response add(@PathParam("ctx") String ctx, AddNamespaceRequest request) {
         if (request == null || request.name() == null || request.name().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"name is required\"}")
+                    .entity(new KubeResultMapper.ErrorBody("bad_request", "name is required"))
                     .build();
         }
         store.add(ctx, request.name());
@@ -48,18 +48,11 @@ public class NamespaceResource {
     @Path("/discover")
     public Response discover(@PathParam("ctx") String ctx) {
         var result = kubernetesService.listNamespaces(ctx);
-        return switch (result) {
-            case KubeResult.Success<List<String>> s -> {
-                var added = store.addAll(ctx, s.value());
-                yield Response.ok(added).build();
-            }
-            case KubeResult.Forbidden<?> f -> Response.ok(List.of()).build();
-            case KubeResult.NotFound<?> n -> Response.ok(List.of()).build();
-            case KubeResult.Unreachable<?> u ->
-                Response.status(Response.Status.BAD_GATEWAY)
-                        .entity("{\"error\": \"" + u.reason() + "\"}")
-                        .build();
-            case KubeResult.ContextNotFound<?> c -> Response.ok(List.of()).build();
-        };
+        return KubeResultMapper.toResponse(
+                result instanceof KubeResult.Success<List<String>> s
+                        ? new KubeResult.Success<>(store.addAll(ctx, s.value()))
+                        : result,
+                List.of()
+        );
     }
 }

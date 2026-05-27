@@ -111,11 +111,12 @@ public class KubernetesService {
         if (root instanceof KubernetesClientException kce) {
             if (kce.getCode() == 403) return new KubeResult.Forbidden<>(kce.getMessage());
             if (kce.getCode() == 404) return new KubeResult.NotFound<>(kce.getMessage());
+            return new KubeResult.Unreachable<>(kce.getMessage());
         }
         if (root instanceof ConnectException || root instanceof SocketTimeoutException) {
             return new KubeResult.Unreachable<>(root.getMessage());
         }
-        if (root instanceof IllegalArgumentException || root instanceof io.fabric8.kubernetes.client.KubernetesClientException) {
+        if (root instanceof IllegalArgumentException) {
             return new KubeResult.ContextNotFound<>(contextName);
         }
         return new KubeResult.Unreachable<>(root.getMessage() != null ? root.getMessage() : root.getClass().getSimpleName());

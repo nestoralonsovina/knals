@@ -116,4 +116,24 @@ class ResourceEndpointTest {
                 .then()
                 .statusCode(404);
     }
+
+    @Test
+    void listResourcesReturns404ForContextNotFound() {
+        MockKubernetesService.stubContextNotFound("bad-ctx");
+
+        given()
+                .when().get("/clusters/bad-ctx/namespaces/team-api/resources/pods")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void getResourceReturns404ForContextNotFound() {
+        MockKubernetesService.stubContextNotFound("bad-ctx");
+
+        given()
+                .when().get("/clusters/bad-ctx/namespaces/team-api/resources/pods/some-pod")
+                .then()
+                .statusCode(404);
+    }
 }
