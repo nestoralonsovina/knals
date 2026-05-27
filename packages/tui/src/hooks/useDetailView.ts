@@ -1,15 +1,15 @@
 import { createSignal } from "solid-js"
 
-export type DetailViewMode = "info" | "logs"
+export type DetailViewMode = "describe" | "yaml" | "logs"
 
 export function useDetailView() {
   const [detailOpen, setDetailOpen] = createSignal(false)
-  const [detailView, setDetailView] = createSignal<DetailViewMode>("info")
+  const [detailView, setDetailView] = createSignal<DetailViewMode>("describe")
   const [logsExpanded, setLogsExpanded] = createSignal(false)
 
   function openDetail() {
     setDetailOpen(true)
-    setDetailView("info")
+    setDetailView("describe")
     setLogsExpanded(false)
   }
 
@@ -17,8 +17,13 @@ export function useDetailView() {
     setDetailOpen(false)
   }
 
+  function toggleYaml() {
+    setDetailView(v => v === "yaml" ? "describe" : "yaml")
+    setLogsExpanded(false)
+  }
+
   function toggleLogs() {
-    setDetailView(v => v === "logs" ? "info" : "logs")
+    setDetailView(v => v === "logs" ? "describe" : "logs")
     setLogsExpanded(false)
   }
 
@@ -38,6 +43,7 @@ export function useDetailView() {
     logsExpanded,
     openDetail,
     closeDetail,
+    toggleYaml,
     toggleLogs,
     toggleLogsExpanded,
     resetOnTypeChange,

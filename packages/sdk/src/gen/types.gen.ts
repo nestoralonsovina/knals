@@ -204,6 +204,25 @@ export type GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses = {
     200: unknown;
 };
 
+export type GetClustersByCtxNamespacesByNsResourcesByTypeByNameDescribeData = {
+    body?: never;
+    path: {
+        ctx: string;
+        name: string;
+        ns: string;
+        type: string;
+    };
+    query?: never;
+    url: '/clusters/{ctx}/namespaces/{ns}/resources/{type}/{name}/describe';
+};
+
+export type GetClustersByCtxNamespacesByNsResourcesByTypeByNameDescribeResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type GetResourcesTypesData = {
     body?: never;
     path?: never;

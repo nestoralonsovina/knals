@@ -99,6 +99,7 @@ const BASE_COMMANDS: Command[] = [
   {
     id: "view-yaml",
     label: "View YAML",
+    shortcut: "Y",
     requires: { screen: "resources", needsSelection: true },
     execute: () => dispatchAction("view-yaml"),
   },

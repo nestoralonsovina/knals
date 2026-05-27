@@ -33,6 +33,7 @@ interface DispatchDeps {
     logsExpanded: () => boolean
     toggleLogsExpanded: () => void
     toggleLogs: () => void
+    toggleYaml: () => void
     closeDetail: () => void
     openDetail: () => void
     resetOnTypeChange: () => void
@@ -41,6 +42,7 @@ interface DispatchDeps {
     resourceTypes: () => string[]
     items: () => { name: string }[]
     selectType: (idx: number) => void
+    fetchDescribe: (name: string) => void
     fetchDetail: (name: string) => void
     setDetailScroll: (fn: number | ((prev: number) => number)) => void
     detailScroll: () => number
@@ -96,7 +98,7 @@ function handlePaneKeys(key: KeyEvent, deps: DispatchDeps): void {
       if (item) {
         deps.detail.openDetail()
         deps.nav.focusDetail()
-        deps.rd.fetchDetail(item.name)
+        deps.rd.fetchDescribe(item.name)
       }
     }
     if (key.name === "g") deps.nav.resetRow()
@@ -106,8 +108,16 @@ function handlePaneKeys(key: KeyEvent, deps: DispatchDeps): void {
   if (deps.pane() === "detail") {
     if (key.name === "h" || key.name === "left") { if (!deps.detail.logsExpanded()) deps.nav.focusList() }
     if (key.raw === "L" || key.raw === "l") deps.detail.toggleLogs()
+    if (key.raw === "Y" || key.raw === "y") {
+      deps.detail.toggleYaml()
+      const item = deps.selected()
+      if (item) {
+        if (deps.detail.detailView() === "yaml") deps.rd.fetchDetail(item.name)
+        else deps.rd.fetchDescribe(item.name)
+      }
+    }
     if (key.raw === "F") deps.detail.toggleLogsExpanded()
-    if (deps.detail.detailView() === "info") {
+    if (deps.detail.detailView() === "describe" || deps.detail.detailView() === "yaml") {
       if (key.name === "j" || key.name === "down") deps.rd.setDetailScroll((s: number) => s + 1)
       if (key.name === "k" || key.name === "up") deps.rd.setDetailScroll((s: number) => Math.max(0, s - 1))
       if (key.name === "g") deps.rd.setDetailScroll(0)

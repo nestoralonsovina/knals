@@ -73,9 +73,15 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
     onAction("view-yaml", () => {
       const item = selected()
       if (item) {
-        detail.openDetail()
-        nav.focusDetail()
-        rd.fetchDetail(item.name)
+        if (detail.detailOpen()) {
+          detail.toggleYaml()
+          if (detail.detailView() === "yaml") rd.fetchDetail(item.name)
+        } else {
+          detail.openDetail()
+          detail.toggleYaml()
+          nav.focusDetail()
+          rd.fetchDetail(item.name)
+        }
       }
     }),
     onAction("refresh", () => {
@@ -144,7 +150,13 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
     },
   })
 
-  const detailContent = () => {
+  const describeContent = () => {
+    const text = rd.describeText()
+    if (!text) return "Loading..."
+    return text.split("\n").slice(rd.detailScroll()).join("\n")
+  }
+
+  const yamlContent = () => {
     const json = rd.detailJson()
     if (!json) return "Loading..."
     return json.split("\n").slice(rd.detailScroll()).join("\n")
@@ -230,12 +242,24 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
 
         <Show when={detail.detailOpen()}>
           <box flexDirection="column" flexGrow={detail.logsExpanded() ? 1 : 0} width={detail.logsExpanded() ? undefined : detailW()} border={true} borderStyle="rounded" borderColor={nav.pane() === "detail" ? C.activeBorder : C.border} backgroundColor={detail.detailView() === "logs" ? C.logBg : C.detailBg}>
-            <Show when={detail.detailView() === "info"}>
-              <box flexDirection="column" paddingLeft={1} paddingRight={1} backgroundColor={C.sidebar}>
-                <text content={truncate(`${rd.activeType()}/${selected()?.name ?? ""}`, detailW() - 4)} fg={C.bright} height={1} />
+            <Show when={detail.detailView() === "describe"}>
+              <box flexDirection="column" paddingLeft={1} paddingRight={1} backgroundColor={C.sidebar} flexDirection="row">
+                <text content={truncate(`${rd.activeType()}/${selected()?.name ?? ""}`, detailW() - 14)} fg={C.bright} height={1} />
+                <box flexGrow={1} />
+                <text content=" Y:yaml " fg={C.dim} />
               </box>
               <box flexGrow={1} paddingLeft={1}>
-                <text content={detailContent()} fg={C.text} />
+                <text content={describeContent()} fg={C.text} />
+              </box>
+            </Show>
+            <Show when={detail.detailView() === "yaml"}>
+              <box flexDirection="column" paddingLeft={1} paddingRight={1} backgroundColor={C.sidebar} flexDirection="row">
+                <text content={truncate(`${rd.activeType()}/${selected()?.name ?? ""} [YAML]`, detailW() - 14)} fg={C.bright} height={1} />
+                <box flexGrow={1} />
+                <text content=" Y:describe " fg={C.dim} />
+              </box>
+              <box flexGrow={1} paddingLeft={1}>
+                <text content={yamlContent()} fg={C.text} />
               </box>
             </Show>
             <Show when={detail.detailView() === "logs"}>
@@ -267,7 +291,7 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
           <text content="  j/k:nav  Enter:detail  Tab:pane  ::cmd" fg={C.dim} />
         </Show>
         <Show when={detail.detailOpen() && !detail.logsExpanded()}>
-          <text content="  L:logs  F:expand  h/l:pane  Esc:back" fg={C.dim} />
+          <text content="  Y:yaml  L:logs  h/l:pane  Esc:back" fg={C.dim} />
         </Show>
         <Show when={detail.logsExpanded()}>
           <text content={`  F:collapse${!logs.isFollowing() ? "  S:follow" : ""}  Esc:back`} fg={C.dim} />

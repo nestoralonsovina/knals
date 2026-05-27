@@ -3,6 +3,7 @@ import {
   getResourcesTypes,
   getClustersByCtxNamespacesByNsResourcesByType,
   getClustersByCtxNamespacesByNsResourcesByTypeByName,
+  getClustersByCtxNamespacesByNsResourcesByTypeByNameDescribe,
 } from "@knals/sdk"
 
 export interface ResourceItem {
@@ -24,6 +25,7 @@ export function useResourceData(cluster: () => string, namespace: () => string) 
   const [data, setData] = createSignal<ResourceData | null>(null)
   const [error, setError] = createSignal("")
   const [detailJson, setDetailJson] = createSignal("")
+  const [describeText, setDescribeText] = createSignal("")
   const [detailScroll, setDetailScroll] = createSignal(0)
 
   const activeType = () => resourceTypes()[typeIdx()]
@@ -53,6 +55,21 @@ export function useResourceData(cluster: () => string, namespace: () => string) 
       }
     } catch {
       setError("Failed to fetch resources")
+    }
+  }
+
+  async function fetchDescribe(name: string) {
+    try {
+      const result = await getClustersByCtxNamespacesByNsResourcesByTypeByNameDescribe({
+        path: { ctx: cluster(), ns: namespace(), type: activeType(), name },
+      })
+      if (result.data) {
+        setDescribeText(result.data as unknown as string)
+      } else {
+        setDescribeText("Failed to load describe output")
+      }
+    } catch {
+      setDescribeText("Failed to load describe output")
     }
   }
 
@@ -96,9 +113,11 @@ export function useResourceData(cluster: () => string, namespace: () => string) 
     columns,
     error,
     detailJson,
+    describeText,
     detailScroll,
     setDetailScroll,
     selectType,
+    fetchDescribe,
     fetchDetail,
   }
 }

@@ -345,6 +345,51 @@
         "tags" : [ "Resource Resource" ]
       }
     },
+    "/clusters/{ctx}/namespaces/{ns}/resources/{type}/{name}/describe" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "ctx",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ns",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "type",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          }
+        },
+        "summary" : "Describe",
+        "tags" : [ "Resource Resource" ]
+      }
+    },
     "/resources/types" : {
       "get" : {
         "responses" : {

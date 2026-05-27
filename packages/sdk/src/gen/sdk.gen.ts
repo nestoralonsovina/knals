@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesByNsCapabilitiesData, GetClustersByCtxNamespacesByNsCapabilitiesResponses, GetClustersByCtxNamespacesByNsPodsByNameLogsData, GetClustersByCtxNamespacesByNsPodsByNameLogsResponses, GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, GetClustersByCtxNamespacesByNsResourcesByTypeData, GetClustersByCtxNamespacesByNsResourcesByTypeResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, GetResourcesTypesData, GetResourcesTypesResponses, PostClustersByCtxNamespacesByNsCapabilitiesRefreshData, PostClustersByCtxNamespacesByNsCapabilitiesRefreshResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesDiscoverData, PostClustersByCtxNamespacesDiscoverResponses, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
+import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesByNsCapabilitiesData, GetClustersByCtxNamespacesByNsCapabilitiesResponses, GetClustersByCtxNamespacesByNsPodsByNameLogsData, GetClustersByCtxNamespacesByNsPodsByNameLogsResponses, GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, GetClustersByCtxNamespacesByNsResourcesByTypeByNameDescribeData, GetClustersByCtxNamespacesByNsResourcesByTypeByNameDescribeResponses, GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, GetClustersByCtxNamespacesByNsResourcesByTypeData, GetClustersByCtxNamespacesByNsResourcesByTypeResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, GetResourcesTypesData, GetResourcesTypesResponses, PostClustersByCtxNamespacesByNsCapabilitiesRefreshData, PostClustersByCtxNamespacesByNsCapabilitiesRefreshResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesDiscoverData, PostClustersByCtxNamespacesDiscoverResponses, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -118,6 +118,16 @@ export const getClustersByCtxNamespacesByNsResourcesByType = <ThrowOnError exten
 export const getClustersByCtxNamespacesByNsResourcesByTypeByName = <ThrowOnError extends boolean = false>(options: Options<GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, ThrowOnError>) => {
     return (options.client ?? client).get<GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, unknown, ThrowOnError>({
         url: '/clusters/{ctx}/namespaces/{ns}/resources/{type}/{name}',
+        ...options
+    });
+};
+
+/**
+ * Describe
+ */
+export const getClustersByCtxNamespacesByNsResourcesByTypeByNameDescribe = <ThrowOnError extends boolean = false>(options: Options<GetClustersByCtxNamespacesByNsResourcesByTypeByNameDescribeData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetClustersByCtxNamespacesByNsResourcesByTypeByNameDescribeResponses, unknown, ThrowOnError>({
+        url: '/clusters/{ctx}/namespaces/{ns}/resources/{type}/{name}/describe',
         ...options
     });
 };
