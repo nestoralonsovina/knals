@@ -15,6 +15,12 @@ export type Cluster = {
     connected?: boolean;
 };
 
+export type ResourceTypeInfo = {
+    name?: string;
+    plural?: string;
+    apiPath?: string;
+};
+
 export type GetClustersData = {
     body?: never;
     path?: never;
@@ -141,3 +147,19 @@ export type GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses = {
      */
     200: unknown;
 };
+
+export type GetResourcesTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/resources/types';
+};
+
+export type GetResourcesTypesResponses = {
+    /**
+     * OK
+     */
+    200: Array<ResourceTypeInfo>;
+};
+
+export type GetResourcesTypesResponse = GetResourcesTypesResponses[keyof GetResourcesTypesResponses];

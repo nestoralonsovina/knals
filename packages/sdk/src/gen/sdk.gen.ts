@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, GetClustersByCtxNamespacesByNsResourcesByTypeData, GetClustersByCtxNamespacesByNsResourcesByTypeResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesDiscoverData, PostClustersByCtxNamespacesDiscoverResponses, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
+import type { DeleteClustersByCtxNamespacesByNsData, DeleteClustersByCtxNamespacesByNsResponses, GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, GetClustersByCtxNamespacesByNsResourcesByTypeData, GetClustersByCtxNamespacesByNsResourcesByTypeResponses, GetClustersByCtxNamespacesData, GetClustersByCtxNamespacesResponses, GetClustersData, GetClustersResponses, GetResourcesTypesData, GetResourcesTypesResponses, PostClustersByCtxNamespacesData, PostClustersByCtxNamespacesDiscoverData, PostClustersByCtxNamespacesDiscoverResponses, PostClustersByCtxNamespacesErrors, PostClustersByCtxNamespacesResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -88,6 +88,16 @@ export const getClustersByCtxNamespacesByNsResourcesByType = <ThrowOnError exten
 export const getClustersByCtxNamespacesByNsResourcesByTypeByName = <ThrowOnError extends boolean = false>(options: Options<GetClustersByCtxNamespacesByNsResourcesByTypeByNameData, ThrowOnError>) => {
     return (options.client ?? client).get<GetClustersByCtxNamespacesByNsResourcesByTypeByNameResponses, unknown, ThrowOnError>({
         url: '/clusters/{ctx}/namespaces/{ns}/resources/{type}/{name}',
+        ...options
+    });
+};
+
+/**
+ * List
+ */
+export const getResourcesTypes = <ThrowOnError extends boolean = false>(options?: Options<GetResourcesTypesData, ThrowOnError>) => {
+    return (options?.client ?? client).get<GetResourcesTypesResponses, unknown, ThrowOnError>({
+        url: '/resources/types',
         ...options
     });
 };

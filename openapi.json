@@ -26,6 +26,20 @@
             "type" : "boolean"
           }
         }
+      },
+      "ResourceTypeInfo" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "plural" : {
+            "type" : "string"
+          },
+          "apiPath" : {
+            "type" : "string"
+          }
+        }
       }
     }
   },
@@ -251,6 +265,27 @@
         },
         "summary" : "Get",
         "tags" : [ "Resource Resource" ]
+      }
+    },
+    "/resources/types" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ResourceTypeInfo"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List",
+        "tags" : [ "Resource Types Resource" ]
       }
     }
   },

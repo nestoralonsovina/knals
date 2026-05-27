@@ -1,17 +1,9 @@
 import { createSignal } from "solid-js"
 
-export const RESOURCE_TYPES = [
-  "pods", "deployments", "replicasets", "statefulsets", "daemonsets",
-  "jobs", "cronjobs", "services", "ingresses", "configmaps",
-  "secrets", "pvcs", "serviceaccounts", "events",
-] as const
-export type ResourceType = (typeof RESOURCE_TYPES)[number]
-
 export type Route =
   | { screen: "clusters" }
   | { screen: "namespaces"; cluster: string }
-  | { screen: "resources"; cluster: string; namespace: string; resourceType: ResourceType }
-  | { screen: "detail"; cluster: string; namespace: string; resourceType: ResourceType; resourceName: string }
+  | { screen: "resources"; cluster: string; namespace: string }
 
 export function createRouteState() {
   const [route, setRoute] = createSignal<Route>({ screen: "clusters" })
@@ -31,9 +23,6 @@ export function createRouteState() {
       case "resources":
         setRoute({ screen: "namespaces", cluster: current.cluster })
         break
-      case "detail":
-        setRoute({ screen: "resources", cluster: current.cluster, namespace: current.namespace, resourceType: current.resourceType })
-        break
     }
   }
 
@@ -43,11 +32,9 @@ export function createRouteState() {
       case "clusters":
         return "knals"
       case "namespaces":
-        return `knals > ${current.cluster}`
+        return current.cluster
       case "resources":
-        return `knals > ${current.cluster} > ${current.namespace}`
-      case "detail":
-        return `knals > ${current.cluster} > ${current.namespace} > ${current.resourceName}`
+        return `${current.cluster} ❯ ${current.namespace}`
     }
   }
 

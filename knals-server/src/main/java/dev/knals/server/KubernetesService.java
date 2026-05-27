@@ -11,7 +11,6 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @ApplicationScoped
 public class KubernetesService {
@@ -19,42 +18,8 @@ public class KubernetesService {
     private static final int TIMEOUT_MS = 5000;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private static final Map<String, String> RESOURCE_API_PATHS = Map.ofEntries(
-            Map.entry("pods", "/api/v1"),
-            Map.entry("services", "/api/v1"),
-            Map.entry("configmaps", "/api/v1"),
-            Map.entry("secrets", "/api/v1"),
-            Map.entry("serviceaccounts", "/api/v1"),
-            Map.entry("events", "/api/v1"),
-            Map.entry("pvcs", "/api/v1"),
-            Map.entry("deployments", "/apis/apps/v1"),
-            Map.entry("replicasets", "/apis/apps/v1"),
-            Map.entry("statefulsets", "/apis/apps/v1"),
-            Map.entry("daemonsets", "/apis/apps/v1"),
-            Map.entry("jobs", "/apis/batch/v1"),
-            Map.entry("cronjobs", "/apis/batch/v1"),
-            Map.entry("ingresses", "/apis/networking.k8s.io/v1")
-    );
-
-    private static final Map<String, String> RESOURCE_NAMES = Map.ofEntries(
-            Map.entry("pods", "pods"),
-            Map.entry("services", "services"),
-            Map.entry("configmaps", "configmaps"),
-            Map.entry("secrets", "secrets"),
-            Map.entry("serviceaccounts", "serviceaccounts"),
-            Map.entry("events", "events"),
-            Map.entry("pvcs", "persistentvolumeclaims"),
-            Map.entry("deployments", "deployments"),
-            Map.entry("replicasets", "replicasets"),
-            Map.entry("statefulsets", "statefulsets"),
-            Map.entry("daemonsets", "daemonsets"),
-            Map.entry("jobs", "jobs"),
-            Map.entry("cronjobs", "cronjobs"),
-            Map.entry("ingresses", "ingresses")
-    );
-
     public static boolean isValidResourceType(String type) {
-        return RESOURCE_API_PATHS.containsKey(type);
+        return ResourceTypeInfo.isValid(type);
     }
 
     public KubeResult<List<String>> listNamespaces(String contextName) {
@@ -84,9 +49,8 @@ public class KubernetesService {
     public KubeResult<ResourceTable> listResources(String contextName, String namespace, String resourceType) {
         try {
             var config = buildConfig(contextName);
-            var apiPath = RESOURCE_API_PATHS.get(resourceType);
-            var resourceName = RESOURCE_NAMES.get(resourceType);
-            var url = config.getMasterUrl() + apiPath + "/namespaces/" + namespace + "/" + resourceName;
+            var typeInfo = ResourceTypeInfo.find(resourceType);
+            var url = config.getMasterUrl() + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural();
 
             try (var client = new KubernetesClientBuilder().withConfig(config).build()) {
                 var httpClient = client.getHttpClient();
@@ -116,9 +80,8 @@ public class KubernetesService {
     public KubeResult<String> getResource(String contextName, String namespace, String resourceType, String name) {
         try {
             var config = buildConfig(contextName);
-            var apiPath = RESOURCE_API_PATHS.get(resourceType);
-            var resourceName = RESOURCE_NAMES.get(resourceType);
-            var url = config.getMasterUrl() + apiPath + "/namespaces/" + namespace + "/" + resourceName + "/" + name;
+            var typeInfo = ResourceTypeInfo.find(resourceType);
+            var url = config.getMasterUrl() + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural() + "/" + name;
 
             try (var client = new KubernetesClientBuilder().withConfig(config).build()) {
                 var httpClient = client.getHttpClient();
