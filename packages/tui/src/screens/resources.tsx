@@ -153,6 +153,7 @@ export function ResourcesScreen(props: { cluster: string; namespace: string }) {
       if (detailView() === "logs") { setDetailView("info"); return }
       if (detailOpen()) { setDetailOpen(false); setPane("list"); return }
       if (pane() === "sidebar") { setPane("list"); return }
+      navigateTo({ screen: "namespaces", cluster: props.cluster })
       return
     }
 

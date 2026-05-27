@@ -19,30 +19,57 @@ const NAMESPACES = ['team-api', 'team-billing', 'team-infra'];
 
 export async function exec(
   cmd: string[],
-  opts: { inheritStderr?: boolean } = {},
+  opts: { inheritStderr?: boolean; timeoutMs?: number } = {},
 ): Promise<string> {
   const proc = Bun.spawn(cmd, {
     stdout: 'pipe',
     stderr: opts.inheritStderr ? 'inherit' : 'pipe',
   });
-  const stdout = await new Response(proc.stdout).text();
-  const exitCode = await proc.exited;
-  if (exitCode !== 0) {
-    if (!opts.inheritStderr && proc.stderr) {
-      const stderr = await new Response(proc.stderr).text();
-      throw new Error(`${cmd.join(' ')} failed:\n${stderr}`);
-    }
-    throw new Error(`${cmd.join(' ')} exited with ${exitCode}`);
+  const stdout = new Response(proc.stdout).text();
+  const stderr = opts.inheritStderr || !proc.stderr
+    ? undefined
+    : new Response(proc.stderr).text();
+  const exited = opts.timeoutMs
+    ? await Promise.race([
+        proc.exited,
+        Bun.sleep(opts.timeoutMs).then(() => 'timeout' as const),
+      ])
+    : await proc.exited;
+
+  if (exited === 'timeout') {
+    proc.kill();
+    throw new Error(`${cmd.join(' ')} timed out after ${opts.timeoutMs}ms`);
   }
-  return stdout.trim();
+
+  if (exited !== 0) {
+    if (stderr) {
+      throw new Error(`${cmd.join(' ')} failed:\n${await stderr}`);
+    }
+    throw new Error(`${cmd.join(' ')} exited with ${exited}`);
+  }
+  return (await stdout).trim();
 }
 
 export async function clusterExists(): Promise<boolean> {
   try {
-    const stdout = await exec(['kind', 'get', 'clusters']);
+    const stdout = await exec(['kind', 'get', 'clusters'], { timeoutMs: 15_000 });
     return stdout.split('\n').includes(CLUSTER_NAME);
   } catch {
     return false;
+  }
+}
+
+export async function assertDockerReady(): Promise<void> {
+  try {
+    await exec(['docker', 'version', '--format', '{{.Server.Version}}'], {
+      timeoutMs: 15_000,
+    });
+    await exec(['docker', 'ps', '--format', '{{.Names}}'], { timeoutMs: 15_000 });
+  } catch (e) {
+    throw new Error(
+      `Docker is not responding correctly: ${(e as Error).message}\n` +
+        'Restart Docker Desktop, wait until it is running, then run make cluster-down and make cluster-up again.',
+    );
   }
 }
 
@@ -50,7 +77,7 @@ export async function createCluster(): Promise<void> {
   console.log(`Creating kind cluster '${CLUSTER_NAME}'...`);
   await exec(
     ['kind', 'create', 'cluster', '--config', join(TEST_DIR, 'kind-config.yaml')],
-    { inheritStderr: true },
+    { inheritStderr: true, timeoutMs: 300_000 },
   );
 }
 
@@ -59,9 +86,24 @@ export async function deleteCluster(): Promise<void> {
   try {
     await exec(['kind', 'delete', 'cluster', '--name', CLUSTER_NAME], {
       inheritStderr: true,
+      timeoutMs: 30_000,
     });
-  } catch {
-    // cluster might not exist
+    return;
+  } catch (e) {
+    console.warn(`kind delete did not complete: ${(e as Error).message}`);
+  }
+
+  console.log('Removing stale kind Docker container if present...');
+  try {
+    await exec(['docker', 'rm', '-f', '--volumes', `${CLUSTER_NAME}-control-plane`], {
+      inheritStderr: true,
+      timeoutMs: 15_000,
+    });
+  } catch (e) {
+    console.warn(`Docker cleanup did not complete: ${(e as Error).message}`);
+    console.warn(
+      `If Docker Desktop still shows ${CLUSTER_NAME}-control-plane, restart Docker Desktop and run make cluster-down again.`,
+    );
   }
 }
 

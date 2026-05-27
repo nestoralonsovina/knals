@@ -10,9 +10,12 @@ import {
   waitForDefaultServiceAccounts,
   waitForResources,
   generateKubeconfigs,
+  assertDockerReady,
 } from './helpers';
 
 async function main() {
+  await assertDockerReady();
+
   if (await clusterExists()) {
     console.log(`Cluster '${CLUSTER_NAME}' already exists, reusing it`);
   } else {
