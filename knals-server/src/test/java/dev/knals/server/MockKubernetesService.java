@@ -38,25 +38,28 @@ public class MockKubernetesService extends KubernetesService {
     }
 
     @Override
-    public List<String> listNamespaces(String contextName) {
-        return namespaceResponses.getOrDefault(contextName, List.of());
+    public KubeResult<List<String>> listNamespaces(String contextName) {
+        var result = namespaceResponses.get(contextName);
+        return new KubeResult.Success<>(result != null ? result : List.of());
     }
 
     @Override
-    public boolean namespaceExists(String contextName, String namespace) {
-        return true;
+    public KubeResult<Boolean> namespaceExists(String contextName, String namespace) {
+        return new KubeResult.Success<>(true);
     }
 
     @Override
-    public ResourceTable listResources(String contextName, String namespace, String resourceType) {
+    public KubeResult<ResourceTable> listResources(String contextName, String namespace, String resourceType) {
         var key = contextName + "/" + namespace + "/" + resourceType;
-        return resourceTableResponses.getOrDefault(key,
-                new ResourceTable(resourceType, List.of(), List.of()));
+        var table = resourceTableResponses.get(key);
+        return new KubeResult.Success<>(table != null ? table : new ResourceTable(resourceType, List.of(), List.of()));
     }
 
     @Override
-    public String getResource(String contextName, String namespace, String resourceType, String name) {
+    public KubeResult<String> getResource(String contextName, String namespace, String resourceType, String name) {
         var key = contextName + "/" + namespace + "/" + resourceType + "/" + name;
-        return resourceDetailResponses.getOrDefault(key, null);
+        var json = resourceDetailResponses.get(key);
+        if (json == null) return new KubeResult.NotFound<>(resourceType + "/" + name);
+        return new KubeResult.Success<>(json);
     }
 }

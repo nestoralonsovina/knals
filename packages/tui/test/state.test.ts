@@ -23,7 +23,6 @@ describe("route state", () => {
       screen: "resources",
       cluster: "kind-knals",
       namespace: "team-api",
-      resourceType: "pods",
     })
     expect(state.route().screen).toBe("resources")
   })
@@ -45,7 +44,6 @@ describe("route state", () => {
         screen: "resources",
         cluster: "kind-knals",
         namespace: "team-api",
-        resourceType: "pods",
       })
       state.goBack()
       expect(state.route().screen).toBe("namespaces")
@@ -60,7 +58,7 @@ describe("route state", () => {
 
     it("shows cluster name on namespaces screen", () => {
       state.navigateTo({ screen: "namespaces", cluster: "kind-knals" })
-      expect(state.breadcrumb()).toBe("knals > kind-knals")
+      expect(state.breadcrumb()).toBe("kind-knals")
     })
 
     it("shows cluster and namespace on resources screen", () => {
@@ -68,9 +66,8 @@ describe("route state", () => {
         screen: "resources",
         cluster: "kind-knals",
         namespace: "team-api",
-        resourceType: "pods",
       })
-      expect(state.breadcrumb()).toBe("knals > kind-knals > team-api")
+      expect(state.breadcrumb()).toBe("kind-knals ❯ team-api")
     })
   })
 })

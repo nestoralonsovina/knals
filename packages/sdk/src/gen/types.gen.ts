@@ -85,10 +85,8 @@ export type PostClustersByCtxNamespacesDiscoverResponses = {
     /**
      * OK
      */
-    200: Array<string>;
+    200: unknown;
 };
-
-export type PostClustersByCtxNamespacesDiscoverResponse = PostClustersByCtxNamespacesDiscoverResponses[keyof PostClustersByCtxNamespacesDiscoverResponses];
 
 export type DeleteClustersByCtxNamespacesByNsData = {
     body?: never;

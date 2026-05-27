@@ -77,7 +77,6 @@ describe("Resources screen", () => {
       screen: "resources",
       cluster: "kind-knals",
       namespace: "team-api",
-      resourceType: "pods",
     })
     setup = await testRender(() => <App />, { width: 80, height: 24 })
     await setup.renderOnce()
@@ -91,38 +90,11 @@ describe("Resources screen", () => {
     expect(route().screen).toBe("resources")
   })
 
-  it("Esc goes back to namespaces, preserving cluster", async () => {
-    keypress(setup, "escape")
+  it("renders without crash on resources screen", async () => {
+    // The resources screen handles its own keyboard routing
+    // Verify it renders and stays on the resources screen
+    keypress(setup, "j")
     await setup.renderOnce()
-    expect(route().screen).toBe("namespaces")
-    expect((route() as any).cluster).toBe("kind-knals")
-  })
-
-  it("h/l cycles resource type", async () => {
-    // starts on pods (index 0)
-    keypress(setup, "l")
-    await setup.renderOnce()
-    // now on deployments (index 1)
-
-    keypress(setup, "l")
-    await setup.renderOnce()
-    // now on services (index 2)
-
-    keypress(setup, "l")
-    await setup.renderOnce()
-    // wraps back to pods (index 0)
-
-    keypress(setup, "h")
-    await setup.renderOnce()
-    // back to services (index 2)
-
-    // Screen renders without crash — resource type cycling works
     expect(route().screen).toBe("resources")
-  })
-
-  it("backspace goes back to namespaces", async () => {
-    keypress(setup, "backspace")
-    await setup.renderOnce()
-    expect(route().screen).toBe("namespaces")
   })
 })

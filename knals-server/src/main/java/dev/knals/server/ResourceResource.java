@@ -23,8 +23,7 @@ public class ResourceResource {
                     .entity("{\"error\": \"Unknown resource type: " + type + "\"}")
                     .build();
         }
-        var table = kubernetesService.listResources(ctx, ns, type);
-        return Response.ok(table).build();
+        return toResponse(kubernetesService.listResources(ctx, ns, type));
     }
 
     @GET
@@ -39,10 +38,24 @@ public class ResourceResource {
                     .entity("{\"error\": \"Unknown resource type: " + type + "\"}")
                     .build();
         }
-        var json = kubernetesService.getResource(ctx, ns, type, name);
-        if (json == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(json).build();
+        return toResponse(kubernetesService.getResource(ctx, ns, type, name));
+    }
+
+    private <T> Response toResponse(KubeResult<T> result) {
+        return switch (result) {
+            case KubeResult.Success<T> s -> Response.ok(s.value()).build();
+            case KubeResult.Forbidden<?> f ->
+                Response.status(Response.Status.FORBIDDEN)
+                        .entity("{\"error\": \"" + f.message() + "\"}")
+                        .build();
+            case KubeResult.NotFound<?> n ->
+                Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\": \"" + n.what() + "\"}")
+                        .build();
+            case KubeResult.Unreachable<?> u ->
+                Response.status(Response.Status.BAD_GATEWAY)
+                        .entity("{\"error\": \"" + u.reason() + "\"}")
+                        .build();
+        };
     }
 }

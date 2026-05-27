@@ -46,8 +46,19 @@ public class NamespaceResource {
 
     @POST
     @Path("/discover")
-    public List<String> discover(@PathParam("ctx") String ctx) {
-        var discovered = kubernetesService.listNamespaces(ctx);
-        return store.addAll(ctx, discovered);
+    public Response discover(@PathParam("ctx") String ctx) {
+        var result = kubernetesService.listNamespaces(ctx);
+        return switch (result) {
+            case KubeResult.Success<List<String>> s -> {
+                var added = store.addAll(ctx, s.value());
+                yield Response.ok(added).build();
+            }
+            case KubeResult.Forbidden<?> f -> Response.ok(List.of()).build();
+            case KubeResult.NotFound<?> n -> Response.ok(List.of()).build();
+            case KubeResult.Unreachable<?> u ->
+                Response.status(Response.Status.BAD_GATEWAY)
+                        .entity("{\"error\": \"" + u.reason() + "\"}")
+                        .build();
+        };
     }
 }
