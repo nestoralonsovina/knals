@@ -145,6 +145,28 @@ export type PostClustersByCtxNamespacesByNsCapabilitiesRefreshResponses = {
     200: unknown;
 };
 
+export type GetClustersByCtxNamespacesByNsPodsByNameLogsData = {
+    body?: never;
+    path: {
+        ctx: string;
+        name: string;
+        ns: string;
+    };
+    query?: {
+        container?: string;
+        follow?: boolean;
+        tailLines?: number;
+    };
+    url: '/clusters/{ctx}/namespaces/{ns}/pods/{name}/logs';
+};
+
+export type GetClustersByCtxNamespacesByNsPodsByNameLogsResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type GetClustersByCtxNamespacesByNsResourcesByTypeData = {
     body?: never;
     path: {

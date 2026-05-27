@@ -1,10 +1,11 @@
-import { createMemo, createEffect, onCleanup, Show, For, type Accessor } from "solid-js"
+import { createSignal, createMemo, createEffect, onCleanup, Show, For, type Accessor } from "solid-js"
 import { useTerminalDimensions } from "@opentui/solid"
 import { useResourceData } from "../hooks/useResourceData"
 import { usePaneNavigation } from "../hooks/usePaneNavigation"
 import { useDetailView } from "../hooks/useDetailView"
 import { useKeyboardDispatch } from "../hooks/useKeyboardDispatch"
 import { useCapabilities } from "../hooks/useCapabilities"
+import { useLogStream } from "../hooks/useLogStream"
 import { shortName, hashSuffix, truncate, listBadge, computeDetailWidth, computeListWidth } from "../lib/resource-layout"
 import { setCommandContext, onAction } from "../lib/command-context"
 import type { Command } from "../lib/commands"
@@ -29,11 +30,13 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
   const dims = useTerminalDimensions()
   const rd = useResourceData(() => props.cluster, () => props.namespace)
   const caps = useCapabilities(() => props.cluster, () => props.namespace)
+  const logs = useLogStream()
   const nav = usePaneNavigation()
   const detail = useDetailView()
 
   const selected = () => rd.items()[nav.rowIdx()]
   const showList = () => !detail.logsExpanded()
+  const [logScroll, setLogScroll] = createSignal(0)
 
   const detailW = createMemo(() =>
     detail.detailOpen() ? computeDetailWidth(dims().width, nav.sidebarW()) : 0
@@ -81,6 +84,15 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
     onAction("refresh-capabilities", () => {
       caps.refresh()
     }),
+    onAction("view-logs", () => {
+      const item = selected()
+      if (item && rd.activeType() === "pods") {
+        detail.openDetail()
+        nav.focusDetail()
+        detail.toggleLogs()
+        logs.start(props.cluster, props.namespace, item.name)
+      }
+    }),
   ]
 
   function handleSelectType(type: string) {
@@ -99,13 +111,37 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
     }
   })
 
-  onCleanup(() => cleanups.forEach(fn => fn()))
+  createEffect(() => {
+    if (detail.detailView() === "logs" && detail.detailOpen() && rd.activeType() === "pods") {
+      const item = selected()
+      if (item) logs.start(props.cluster, props.namespace, item.name)
+    } else {
+      logs.stop()
+    }
+  })
+
+  createEffect(() => {
+    const lineCount = logs.lines().length
+    if (logs.isFollowing() && lineCount > 0) {
+      setLogScroll(Math.max(0, lineCount - (dims().height - 6)))
+    }
+  })
+
+  onCleanup(() => { logs.stop(); cleanups.forEach(fn => fn()) })
 
   useKeyboardDispatch({
     cluster: props.cluster,
     pane: nav.pane,
     nav, detail, rd, selected,
     registry: props.registry,
+    logs: {
+      scrollUp: logs.scrollUp,
+      toggleFollow: logs.toggleFollow,
+      isFollowing: logs.isFollowing,
+      setLogScroll,
+      logScroll,
+      lineCount: () => logs.lines().length,
+    },
   })
 
   const detailContent = () => {
@@ -203,14 +239,22 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
               </box>
             </Show>
             <Show when={detail.detailView() === "logs"}>
-              <box height={1} paddingLeft={1} backgroundColor={C.sidebar}>
-                <text content={truncate(selected()?.name ?? "?", (detail.logsExpanded() ? dims().width - nav.sidebarW() : detailW()) - 16)} fg={C.accent} />
+              <box height={1} paddingLeft={1} backgroundColor={C.sidebar} flexDirection="row">
+                <text content={truncate(selected()?.name ?? "?", (detail.logsExpanded() ? dims().width - nav.sidebarW() : detailW()) - 30)} fg={C.accent} />
+                <text content={logs.isConnected() ? (logs.isFollowing() ? " FOLLOW" : " PAUSED") : ""} fg={logs.isFollowing() ? "#22c55e" : "#eab308"} />
                 <box flexGrow={1} />
                 <text content={detail.logsExpanded() ? " F:collapse " : " F:expand "} fg={C.dim} />
               </box>
-              <box flexGrow={1} alignItems="center" justifyContent="center">
-                <text content="Log streaming not yet connected" fg={C.dim} />
-              </box>
+              <Show when={logs.lines().length > 0}>
+                <box flexGrow={1} paddingLeft={1}>
+                  <text content={logs.lines().slice(logScroll()).join("\n")} fg={C.text} />
+                </box>
+              </Show>
+              <Show when={logs.lines().length === 0}>
+                <box flexGrow={1} alignItems="center" justifyContent="center">
+                  <text content={logs.isConnected() ? "Waiting for log output..." : "Connecting..."} fg={C.dim} />
+                </box>
+              </Show>
             </Show>
           </box>
         </Show>
@@ -226,7 +270,7 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; ini
           <text content="  L:logs  F:expand  h/l:pane  Esc:back" fg={C.dim} />
         </Show>
         <Show when={detail.logsExpanded()}>
-          <text content="  F:collapse  Esc:back" fg={C.dim} />
+          <text content={`  F:collapse${!logs.isFollowing() ? "  S:follow" : ""}  Esc:back`} fg={C.dim} />
         </Show>
       </box>
     </box>

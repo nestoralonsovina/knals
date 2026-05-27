@@ -47,6 +47,14 @@ interface DispatchDeps {
   }
   selected: () => { name: string } | undefined
   registry: () => Command[]
+  logs?: {
+    scrollUp: () => void
+    toggleFollow: () => void
+    isFollowing: () => boolean
+    setLogScroll: (fn: number | ((prev: number) => number)) => void
+    logScroll: () => number
+    lineCount: () => number
+  }
 }
 
 function handleEscapeCascade(key: KeyEvent, deps: DispatchDeps): boolean {
@@ -103,6 +111,13 @@ function handlePaneKeys(key: KeyEvent, deps: DispatchDeps): void {
       if (key.name === "j" || key.name === "down") deps.rd.setDetailScroll((s: number) => s + 1)
       if (key.name === "k" || key.name === "up") deps.rd.setDetailScroll((s: number) => Math.max(0, s - 1))
       if (key.name === "g") deps.rd.setDetailScroll(0)
+    }
+    if (deps.detail.detailView() === "logs" && deps.logs) {
+      if (key.raw === "S" || key.raw === "s") { deps.logs.toggleFollow(); deps.logs.setLogScroll(Math.max(0, deps.logs.lineCount() - 1)) }
+      if (key.name === "j" || key.name === "down") { deps.logs.scrollUp(); deps.logs.setLogScroll((s: number) => Math.min(s + 1, Math.max(0, deps.logs.lineCount() - 1))) }
+      if (key.name === "k" || key.name === "up") { deps.logs.scrollUp(); deps.logs.setLogScroll((s: number) => Math.max(0, s - 1)) }
+      if (key.name === "g") { deps.logs.scrollUp(); deps.logs.setLogScroll(0) }
+      if (key.raw === "G") { deps.logs.toggleFollow(); deps.logs.setLogScroll(Math.max(0, deps.logs.lineCount() - 1)) }
     }
   }
 }

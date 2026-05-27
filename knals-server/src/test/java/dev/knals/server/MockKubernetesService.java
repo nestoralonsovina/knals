@@ -4,6 +4,8 @@ import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,6 +18,8 @@ public class MockKubernetesService extends KubernetesService {
     private static final Map<String, ResourceTable> resourceTableResponses = new ConcurrentHashMap<>();
     private static final Map<String, String> resourceDetailResponses = new ConcurrentHashMap<>();
     private static final Map<String, Map<String, List<String>>> capabilityResponses = new ConcurrentHashMap<>();
+    private static final Map<String, String> logResponses = new ConcurrentHashMap<>();
+    private static final Set<String> logForbidden = ConcurrentHashMap.newKeySet();
     private static final Set<String> contextNotFoundContexts = ConcurrentHashMap.newKeySet();
 
     public static void stubListNamespaces(String context, List<String> namespaces) {
@@ -36,6 +40,14 @@ public class MockKubernetesService extends KubernetesService {
         capabilityResponses.put(context + "/" + namespace, capabilities);
     }
 
+    public static void stubLogs(String context, String namespace, String pod, String logOutput) {
+        logResponses.put(context + "/" + namespace + "/" + pod, logOutput);
+    }
+
+    public static void stubLogsForbidden(String context, String namespace, String pod) {
+        logForbidden.add(context + "/" + namespace + "/" + pod);
+    }
+
     public static void stubContextNotFound(String context) {
         contextNotFoundContexts.add(context);
     }
@@ -45,6 +57,8 @@ public class MockKubernetesService extends KubernetesService {
         resourceTableResponses.clear();
         resourceDetailResponses.clear();
         capabilityResponses.clear();
+        logResponses.clear();
+        logForbidden.clear();
         contextNotFoundContexts.clear();
     }
 
@@ -67,6 +81,27 @@ public class MockKubernetesService extends KubernetesService {
         var key = contextName + "/" + namespace + "/" + resourceType;
         var table = resourceTableResponses.get(key);
         return new KubeResult.Success<>(table != null ? table : new ResourceTable(resourceType, List.of(), List.of()));
+    }
+
+    @Override
+    public KubeResult<String> getLogSnapshot(String contextName, String namespace, String pod, String container, int tailLines) {
+        if (contextNotFoundContexts.contains(contextName)) return new KubeResult.ContextNotFound<>(contextName);
+        var key = contextName + "/" + namespace + "/" + pod;
+        if (logForbidden.contains(key)) return new KubeResult.Forbidden<>("Cannot get logs for " + pod);
+        var log = logResponses.get(key);
+        if (log == null) return new KubeResult.NotFound<>("pod " + pod);
+        return new KubeResult.Success<>(log);
+    }
+
+    @Override
+    public KubeResult<PodLogStream> openLogStream(String contextName, String namespace, String pod, String container, int tailLines) {
+        if (contextNotFoundContexts.contains(contextName)) return new KubeResult.ContextNotFound<>(contextName);
+        var key = contextName + "/" + namespace + "/" + pod;
+        if (logForbidden.contains(key)) return new KubeResult.Forbidden<>("Cannot stream logs for " + pod);
+        var log = logResponses.get(key);
+        if (log == null) return new KubeResult.NotFound<>("pod " + pod);
+        var is = new ByteArrayInputStream(log.getBytes(StandardCharsets.UTF_8));
+        return new KubeResult.Success<>(new PodLogStream(is, () -> {}));
     }
 
     @Override

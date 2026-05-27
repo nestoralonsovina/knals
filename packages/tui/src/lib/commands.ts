@@ -103,6 +103,13 @@ const BASE_COMMANDS: Command[] = [
     execute: () => dispatchAction("view-yaml"),
   },
   {
+    id: "view-logs",
+    label: "View Logs",
+    shortcut: "L",
+    requires: { screen: "resources", resourceType: ["pods"], needsSelection: true },
+    execute: () => dispatchAction("view-logs"),
+  },
+  {
     id: "refresh-capabilities",
     label: "Refresh Capabilities",
     requires: { screen: "resources" },

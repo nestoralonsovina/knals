@@ -5,9 +5,13 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.dsl.LogWatch;
 import io.fabric8.kubernetes.client.http.HttpResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.*;
@@ -99,6 +103,46 @@ public class KubernetesService {
                 }
                 return new KubeResult.Success<>(snapshot);
             }
+        } catch (Exception e) {
+            return classifyError(e, contextName);
+        }
+    }
+
+    public record PodLogStream(InputStream input, Closeable cleanup) implements Closeable {
+        @Override
+        public void close() throws IOException {
+            try { input.close(); } catch (Exception ignored) {}
+            try { cleanup.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    public KubeResult<String> getLogSnapshot(String contextName, String namespace, String pod, String container, int tailLines) {
+        try {
+            try (var client = buildClient(contextName)) {
+                var podObj = client.pods().inNamespace(namespace).withName(pod).get();
+                if (podObj == null) return new KubeResult.NotFound<>("pod " + pod);
+                var effectiveContainer = container != null ? container : podObj.getSpec().getContainers().get(0).getName();
+                var log = client.pods().inNamespace(namespace).withName(pod)
+                        .inContainer(effectiveContainer).tailingLines(tailLines).getLog();
+                return new KubeResult.Success<>(log != null ? log : "");
+            }
+        } catch (Exception e) {
+            return classifyError(e, contextName);
+        }
+    }
+
+    public KubeResult<PodLogStream> openLogStream(String contextName, String namespace, String pod, String container, int tailLines) {
+        try {
+            var client = buildClient(contextName);
+            var podObj = client.pods().inNamespace(namespace).withName(pod).get();
+            if (podObj == null) { client.close(); return new KubeResult.NotFound<>("pod " + pod); }
+            var effectiveContainer = container != null ? container : podObj.getSpec().getContainers().get(0).getName();
+            var logWatch = client.pods().inNamespace(namespace).withName(pod)
+                    .inContainer(effectiveContainer).tailingLines(tailLines).watchLog();
+            return new KubeResult.Success<>(new PodLogStream(logWatch.getOutput(), () -> {
+                logWatch.close();
+                client.close();
+            }));
         } catch (Exception e) {
             return classifyError(e, contextName);
         }
