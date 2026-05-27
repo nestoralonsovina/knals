@@ -1,22 +1,45 @@
 import { ServerManager } from "./server-manager"
-import { resolve } from "node:path"
+import { resolve, dirname } from "node:path"
 import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 
+const SELF_DIR = dirname(process.execPath)
 const ROOT_DIR = resolve(import.meta.dir, "../../..")
-const NATIVE_BINARY = resolve(ROOT_DIR, "knals-server/target/knals-server-0.1.0-SNAPSHOT-runner")
-const JVM_JAR = resolve(ROOT_DIR, "knals-server/target/quarkus-app/quarkus-run.jar")
 const CONFIG_DIR = process.env.KNALS_CONFIG_DIR ?? resolve(homedir(), ".config/knals")
+
+// Compiled binaries need NODE_PATH set before module resolution initializes.
+// Re-exec with NODE_PATH if we detect dist/node_modules alongside the binary.
+const distNodeModules = resolve(SELF_DIR, "node_modules")
+if (existsSync(distNodeModules) && !process.env.__KNALS_INIT) {
+  const child = Bun.spawn([process.execPath, ...process.argv.slice(2)], {
+    env: {
+      ...process.env,
+      NODE_PATH: distNodeModules + (process.env.NODE_PATH ? `:${process.env.NODE_PATH}` : ""),
+      __KNALS_INIT: "1",
+    },
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  })
+  process.exit(await child.exited)
+}
 
 function resolveServerCommand(): string {
   if (process.env.KNALS_SERVER_CMD) return process.env.KNALS_SERVER_CMD
-  if (existsSync(NATIVE_BINARY)) return `${NATIVE_BINARY} -Dquarkus.http.port=__PORT__`
-  return `java -Dquarkus.http.port=__PORT__ -jar ${JVM_JAR}`
+
+  const distBinary = resolve(SELF_DIR, "knals-server")
+  if (existsSync(distBinary)) return `${distBinary} -Dquarkus.http.port=__PORT__`
+
+  const devBinary = resolve(ROOT_DIR, "knals-server/target/knals-server-0.1.0-SNAPSHOT-runner")
+  if (existsSync(devBinary)) return `${devBinary} -Dquarkus.http.port=__PORT__`
+
+  const jvmJar = resolve(ROOT_DIR, "knals-server/target/quarkus-app/quarkus-run.jar")
+  return `java -Dquarkus.http.port=__PORT__ -jar ${jvmJar}`
 }
 
 async function main() {
   const serverCmd = resolveServerCommand()
-  const isNative = serverCmd.includes("-runner")
+  const isNative = !serverCmd.includes("java ")
 
   const server = new ServerManager({
     command: serverCmd,

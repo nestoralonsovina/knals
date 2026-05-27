@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@knals/sdk": "workspace:*",
-    "@knals/tui": "workspace:*"
+    "@knals/tui": "workspace:*",
+    "@opentui/core": "^0.2.15",
+    "@opentui/solid": "^0.2.15",
+    "solid-js": "1.9.12"
   }
 }
