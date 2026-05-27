@@ -8,9 +8,14 @@ export function useLogStream() {
   const [isConnected, setIsConnected] = createSignal(false)
 
   let controller: AbortController | null = null
+  let currentKey: string | null = null
 
   async function start(cluster: string, namespace: string, pod: string) {
+    const key = `${cluster}/${namespace}/${pod}`
+    if (key === currentKey && controller) return
+
     stop()
+    currentKey = key
     setLines([])
     setIsFollowing(true)
     setIsConnected(false)
@@ -58,6 +63,7 @@ export function useLogStream() {
       controller.abort()
       controller = null
     }
+    currentKey = null
     setIsConnected(false)
   }
 

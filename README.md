@@ -1,14 +1,26 @@
 # knals
 
-A personal Kubernetes TUI viewer designed for RBAC-restricted clusters where standard tools (like k9s) assume full access.
+A Kubernetes TUI viewer designed for RBAC-restricted clusters where standard tools (like k9s) assume full access.
 
 ## Problem
 
 In clusters with strict RBAC, users often cannot list namespaces or cluster-scoped resources. k9s requires `--namespace` as a CLI flag and offers no way to discover, remember, or adapt to what you actually have access to. knals handles this properly.
 
-## Status
+## Install
 
-Pre-alpha. Architecture and API designed; implementation not started.
+macOS (Apple Silicon):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nestoralonsovina/knals/main/install.sh | sh
+```
+
+Or download a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nestoralonsovina/knals/main/install.sh | sh -s v0.1.0
+```
+
+The installer downloads the binary to `~/.knals/bin/` and offers to add it to your PATH.
 
 ## Architecture
 
@@ -32,7 +44,7 @@ Inspired by [opencode](https://github.com/anomalyco/opencode): headless HTTP ser
 - **Server** — [Quarkus](https://quarkus.io/) + [fabric8 kubernetes-client](https://github.com/fabric8io/kubernetes-client), compiled to native binary via GraalVM. JAX-RS endpoints + [SmallRye OpenAPI](https://github.com/smallrye/smallrye-open-api) for spec generation. [Mutiny](https://smallrye.io/smallrye-mutiny/) for reactive SSE streams.
 - **TUI** — Bun + [`@opentui/solid`](https://github.com/sst/opentui). Talks to the server only through the generated SDK — no in-process shortcuts — so `knals serve` / `knals attach <url>` modes fall out for free.
 - **SDK** — TypeScript client generated from `openapi.json` via [`@hey-api/openapi-ts`](https://heyapi.dev/).
-- **Packaging** — GraalVM `native-image` + `bun build --compile`. One binary ships.
+- **Packaging** — GraalVM `native-image` + `bun build --compile`. Distributed as a tarball via GitHub Releases.
 
 ## RBAC-first design
 
@@ -54,111 +66,64 @@ See [CONTEXT.md](CONTEXT.md) for the full domain glossary.
 - **Namespaced resources only**: Pods, Deployments, ReplicaSets, StatefulSets, DaemonSets, Jobs, CronJobs, Services, Ingresses, ConfigMaps, Secrets, PVCs, ServiceAccounts, Events.
 - **No cluster-scoped resources**: No Nodes, PVs, ClusterRoles, CRDs.
 
-## API
-
-Per-resource typed endpoints. Each resource type has its own response model with kind-specific fields (pod phase, deployment replicas, etc.). SSE for watch streams and log streaming.
-
-### Cluster management
-
-```
-GET  /clusters                                → list kubeconfig contexts
-GET  /clusters/{ctx}                          → cluster details + connection status
-```
-
-### Namespace Memory
-
-```
-GET    /clusters/{ctx}/namespaces             → list remembered namespaces
-POST   /clusters/{ctx}/namespaces             → add namespace (validates via probe)
-DELETE /clusters/{ctx}/namespaces/{ns}         → remove from memory
-```
-
-### Capabilities
-
-```
-GET  /clusters/{ctx}/namespaces/{ns}/capabilities          → cached Capability Snapshot
-POST /clusters/{ctx}/namespaces/{ns}/capabilities/refresh  → re-probe via SelfSubjectRulesReview
-```
-
-### Resources (per type: pods, deployments, services, ...)
-
-```
-GET  /clusters/{ctx}/namespaces/{ns}/pods                  → list pods
-GET  /clusters/{ctx}/namespaces/{ns}/pods/{name}           → get single pod
-GET  /clusters/{ctx}/namespaces/{ns}/pods/watch            → SSE stream (ADDED/MODIFIED/DELETED)
-```
-
-Repeat for each resource type: `deployments`, `replicasets`, `statefulsets`, `daemonsets`, `jobs`, `cronjobs`, `services`, `ingresses`, `configmaps`, `secrets`, `pvcs`, `serviceaccounts`, `events`.
-
-### Logs
-
-```
-GET  /clusters/{ctx}/namespaces/{ns}/pods/{name}/logs              → log snapshot
-GET  /clusters/{ctx}/namespaces/{ns}/pods/{name}/logs?follow=true  → SSE log stream
-```
-
-### Data flow
-
-1. `GET .../pods` returns current state (snapshot).
-2. `GET .../pods/watch` returns an SSE stream of ADDED / MODIFIED / DELETED events.
-
-The TUI loads the snapshot first, then opens the watch stream for live updates.
-
-## Planned layout
-
-```
-knals/
-├── pom.xml                        # Maven parent
-├── knals-server/
-│   ├── pom.xml
-│   └── src/main/java/             # Quarkus, JAX-RS, fabric8
-├── knals-core/
-│   ├── pom.xml
-│   └── src/main/java/             # shared resource models
-├── packages/
-│   ├── tui/                       # @opentui/solid client
-│   └── sdk/                       # generated TS client
-├── openapi.json                   # generated via SmallRye OpenAPI
-└── scripts/build.ts               # native-image + bun compile → single binary
-```
-
 ## Dev setup
 
 ### Prerequisites
 
-- JDK 21+ (GraalVM recommended)
-- Maven 3.9+
+- JDK 21+ (GraalVM or Mandrel recommended)
 - Bun
 - Docker (for kind test clusters)
 - [kind](https://kind.sigs.k8s.io/)
 
-### Dev loop
+### Commands
 
-- `./mvnw quarkus:dev -pl knals-server` — server with live reload
-- `bun --cwd packages/tui dev` — TUI, reads `KNALS_SERVER_URL` from env
+| Command | Description |
+|---------|-------------|
+| `make dev-server` | Start Quarkus server with live reload |
+| `make dev-tui` | Start TUI in dev mode (reads `KNALS_SERVER_URL` from env) |
+| `make start` | Build and run knals (uses your current kubeconfig) |
+| `make start-profile` | Build and run with a test cluster profile selector |
+| `make build` | Build all modules (Java + TypeScript) |
+| `make test` | Run server and TUI tests |
+| `make test-all` | Run all tests including e2e |
+| `make native` | Build GraalVM native binary |
+| `make dist` | Build full distribution (native + bundled TUI) |
+| `make openapi` | Regenerate OpenAPI spec and SDK |
+| `make cluster-up` | Create kind test cluster with RBAC personas |
+| `make cluster-down` | Tear down test cluster |
 
 ### Test cluster
 
 A kind cluster with multiple RBAC personas for development and e2e testing. See [ADR-0003](docs/adr/0003-typescript-test-infrastructure.md).
 
 ```bash
-cd test && bun install          # one-time setup
-bun run cluster:up              # create cluster + apply manifests + generate kubeconfigs
-bun test                        # run e2e tests (cluster must be running)
-bun run cluster:down            # tear down cluster
+make cluster-up       # create cluster + apply manifests + generate kubeconfigs
+make start-profile    # run knals with a profile selector (full-access, read-only, etc.)
+make cluster-down     # tear down cluster
 ```
 
-## Ideas borrowed from opencode
+Available profiles: `full-access`, `namespace-only`, `read-only`, `mixed-permissions`.
 
-- **Routes as screens** (`pods`, `deployments`, `logs`) swapped by a tiny `RouteProvider`.
-- **Mode-stack keymap** (`/` to filter, `:` to command, per-resource modes) so bindings are context-aware.
-- **Dialog stack** for confirmations and prompts.
-- **Command palette** as a first-class concept with fuzzy search.
-- **OpenAPI as the single source of truth** between Java and TS — CI fails if the regenerated SDK drifts from the checked-in spec.
+## Project structure
+
+```
+knals/
+├── pom.xml                        # Maven parent
+├── knals-core/                    # shared resource models (Kotlin)
+├── knals-server/                  # Quarkus JAX-RS + fabric8 (Kotlin)
+├── packages/
+│   ├── launcher/                  # binary packaging (Bun compile)
+│   ├── tui/                       # @opentui/solid TUI client
+│   ├── sdk/                       # generated TypeScript client
+│   └── e2e/                       # e2e test utilities
+├── test/                          # kind cluster + e2e tests
+├── openapi.json                   # generated via SmallRye OpenAPI
+└── install.sh                     # curl-to-shell installer
+```
 
 ## Inspirations
 
-- [k9s](https://github.com/derailed/k9s) — feature reference (the `upstream` remote)
+- [k9s](https://github.com/derailed/k9s) — feature reference
 - [opencode](https://github.com/anomalyco/opencode) — architecture reference
 - [OpenTUI](https://github.com/sst/opentui) — UI framework
 

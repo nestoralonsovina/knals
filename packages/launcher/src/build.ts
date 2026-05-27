@@ -1,20 +1,28 @@
 import { resolve, basename } from "node:path"
-import { existsSync, mkdirSync, readFileSync, copyFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, copyFileSync, readdirSync } from "node:fs"
 import { createSolidTransformPlugin } from "@opentui/solid/bun-plugin"
 
 const ROOT_DIR = resolve(import.meta.dir, "../../..")
 const ENTRY = resolve(import.meta.dir, "index.ts")
 const OUT_DIR = resolve(ROOT_DIR, "dist")
-const NATIVE_BINARY = resolve(ROOT_DIR, "knals-server/target/knals-server-0.1.0-SNAPSHOT-runner")
 const BUNDLE_PATH = resolve(OUT_DIR, "index.js")
 const BINARY_PATH = resolve(OUT_DIR, "knals")
+
+function findNativeBinary(): string {
+  const targetDir = resolve(ROOT_DIR, "knals-server/target")
+  if (!existsSync(targetDir)) return ""
+  const match = readdirSync(targetDir).find(f => f.startsWith("knals-server-") && f.endsWith("-runner"))
+  return match ? resolve(targetDir, match) : ""
+}
+
+const NATIVE_BINARY = findNativeBinary()
 
 mkdirSync(OUT_DIR, { recursive: true })
 
 console.log(`Building knals binary for ${process.platform}-${process.arch}...`)
 
-if (!existsSync(NATIVE_BINARY)) {
-  console.error(`Native server binary not found at ${NATIVE_BINARY}`)
+if (!NATIVE_BINARY) {
+  console.error("Native server binary not found in knals-server/target/")
   console.error("Run 'make native' first to build it.")
   process.exit(1)
 }

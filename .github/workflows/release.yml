@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Set up Mandrel
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: mandrel
+          java-version: 21
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Set version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          ./mvnw versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build distribution
+        run: make dist
+        env:
+          QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS: -J-Xmx5g
+
+      - name: Package tarball
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p staging/knals
+          cp dist/knals staging/knals/
+          cp dist/knals-server staging/knals/
+          cp dist/*.wasm staging/knals/
+          cp dist/*.scm staging/knals/
+          cp -R dist/node_modules staging/knals/
+          cd staging
+          tar -czf "../knals-v${VERSION}-darwin-arm64.tar.gz" knals/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release create "$GITHUB_REF_NAME" \
+            --title "knals v${VERSION}" \
+            --generate-notes \
+            "knals-v${VERSION}-darwin-arm64.tar.gz"
