@@ -50,7 +50,8 @@ public class KubernetesService {
         try {
             var config = buildConfig(contextName);
             var typeInfo = ResourceTypeInfo.find(resourceType);
-            var url = config.getMasterUrl() + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural();
+            var masterUrl = config.getMasterUrl().replaceAll("/$", "");
+            var url = masterUrl + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural();
 
             try (var client = new KubernetesClientBuilder().withConfig(config).build()) {
                 var httpClient = client.getHttpClient();
@@ -81,7 +82,8 @@ public class KubernetesService {
         try {
             var config = buildConfig(contextName);
             var typeInfo = ResourceTypeInfo.find(resourceType);
-            var url = config.getMasterUrl() + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural() + "/" + name;
+            var masterUrl = config.getMasterUrl().replaceAll("/$", "");
+            var url = masterUrl + typeInfo.apiPath() + "/namespaces/" + namespace + "/" + typeInfo.plural() + "/" + name;
 
             try (var client = new KubernetesClientBuilder().withConfig(config).build()) {
                 var httpClient = client.getHttpClient();
