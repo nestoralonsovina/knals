@@ -1,11 +1,14 @@
-import { createSignal, Show, For } from "solid-js"
+import { createSignal, createEffect, onCleanup, Show, For, type Accessor } from "solid-js"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { navigateTo, goBack } from "../app"
 import { useNamespaceData } from "../hooks/useNamespaceData"
 import { useFilterMode } from "../hooks/useFilterMode"
 import { useAddMode } from "../hooks/useAddMode"
+import { paletteOpen, paletteHandledKey } from "../hooks/useCommandPalette"
+import { setCommandContext, commandContext, onAction } from "../lib/command-context"
+import { isAvailable, type Command } from "../lib/commands"
 
-export function NamespacesScreen(props: { cluster: string }) {
+export function NamespacesScreen(props: { cluster: string; registry: Accessor<Command[]> }) {
   const dims = useTerminalDimensions()
   const ns = useNamespaceData(() => props.cluster)
   const filter = useFilterMode(ns.namespaces)
@@ -19,7 +22,24 @@ export function NamespacesScreen(props: { cluster: string }) {
   const listW = () => Math.min(56, dims().width - 8)
   const startX = () => Math.floor((dims().width - listW()) / 2)
 
+  const selectedNamespace = () => filter.filtered()[selectedIndex()]
+
+  createEffect(() => {
+    setCommandContext({
+      screen: "namespaces",
+      cluster: props.cluster,
+      namespace: selectedNamespace(),
+    })
+  })
+
+  const cleanups = [
+    onAction("add-namespace", () => add.enterAdd()),
+    onAction("discover-namespaces", () => ns.discoverNamespaces()),
+  ]
+  onCleanup(() => cleanups.forEach(fn => fn()))
+
   useKeyboard((key) => {
+    if (paletteOpen() || paletteHandledKey()) return
     if (add.handleAddKey(key)) return
     if (filter.handleFilterKey(key)) { setSelectedIndex(0); return }
 
@@ -30,9 +50,17 @@ export function NamespacesScreen(props: { cluster: string }) {
       if (selected) navigateTo({ screen: "resources", cluster: props.cluster, namespace: selected })
     }
     if (key.name === "escape" || key.name === "backspace") goBack()
-    if (key.raw === "/") { filter.enterFilter(); setSelectedIndex(0) }
-    if (key.raw === "a") add.enterAdd()
-    if (key.raw === "r") ns.discoverNamespaces()
+    if (key.raw === "/") { filter.enterFilter(); setSelectedIndex(0); return }
+
+    if (key.raw?.length === 1 && !key.ctrl && !key.meta) {
+      const ctx = commandContext()
+      for (const cmd of props.registry()) {
+        if (cmd.shortcut === key.raw && isAvailable(cmd, ctx).available) {
+          cmd.execute(ctx)
+          return
+        }
+      }
+    }
   })
 
   return (
@@ -55,7 +83,7 @@ export function NamespacesScreen(props: { cluster: string }) {
               <text content={`⌕ "${filter.filterText()}" (${filter.filtered().length})`} fg="#3b82f6" />
             </Show>
             <Show when={!filter.filterMode() && !filter.filterText()}>
-              <text content="/:filter  a:add  r:discover" fg="#475569" />
+              <text content="/:filter  a:add  r:discover  ::commands" fg="#475569" />
             </Show>
           </box>
 

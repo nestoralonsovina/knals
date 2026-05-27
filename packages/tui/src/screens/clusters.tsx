@@ -1,6 +1,8 @@
-import { createSignal, Show, For } from "solid-js"
+import { createSignal, createEffect, Show, For } from "solid-js"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { navigateTo } from "../app"
+import { paletteOpen, paletteHandledKey } from "../hooks/useCommandPalette"
+import { setCommandContext } from "../lib/command-context"
 
 export function ClustersScreen(props: { clusters?: { name: string; server: string; user: string; connected: boolean }[] }) {
   const dims = useTerminalDimensions()
@@ -11,7 +13,12 @@ export function ClustersScreen(props: { clusters?: { name: string; server: strin
 
   const clusterList = () => props.clusters ?? []
 
+  createEffect(() => {
+    setCommandContext({ screen: "clusters" })
+  })
+
   useKeyboard((key) => {
+    if (paletteOpen() || paletteHandledKey()) return
     if (key.name === "j" || key.name === "down") setSelectedIndex(i => Math.min(i + 1, clusterList().length - 1))
     if (key.name === "k" || key.name === "up") setSelectedIndex(i => Math.max(i - 1, 0))
     if (key.name === "return") {

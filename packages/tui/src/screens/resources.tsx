@@ -1,10 +1,12 @@
-import { createMemo, createEffect, Show, For } from "solid-js"
+import { createMemo, createEffect, onCleanup, Show, For, type Accessor } from "solid-js"
 import { useTerminalDimensions } from "@opentui/solid"
 import { useResourceData } from "../hooks/useResourceData"
 import { usePaneNavigation } from "../hooks/usePaneNavigation"
 import { useDetailView } from "../hooks/useDetailView"
 import { useKeyboardDispatch } from "../hooks/useKeyboardDispatch"
 import { shortName, hashSuffix, truncate, listBadge, computeDetailWidth, computeListWidth } from "../lib/resource-layout"
+import { setCommandContext, onAction } from "../lib/command-context"
+import type { Command } from "../lib/commands"
 
 const C = {
   bg: "#0f0f23",
@@ -22,7 +24,7 @@ const C = {
   sel: "#1e3a5f",
 }
 
-export function ResourcesScreen(props: { cluster: string; namespace: string }) {
+export function ResourcesScreen(props: { cluster: string; namespace: string; initialType?: string; registry: Accessor<Command[]> }) {
   const dims = useTerminalDimensions()
   const rd = useResourceData(() => props.cluster, () => props.namespace)
   const nav = usePaneNavigation()
@@ -44,10 +46,60 @@ export function ResourcesScreen(props: { cluster: string; namespace: string }) {
     detail.resetOnTypeChange()
   })
 
+  createEffect(() => {
+    if (props.initialType && rd.resourceTypes().length > 0) {
+      const idx = rd.resourceTypes().indexOf(props.initialType!)
+      if (idx >= 0) rd.selectType(idx)
+    }
+  })
+
+  createEffect(() => {
+    setCommandContext({
+      screen: "resources",
+      cluster: props.cluster,
+      namespace: props.namespace,
+      resourceType: rd.activeType(),
+      selectedItem: selected(),
+    })
+  })
+
+  const cleanups = [
+    onAction("view-yaml", () => {
+      const item = selected()
+      if (item) {
+        detail.openDetail()
+        nav.focusDetail()
+        rd.fetchDetail(item.name)
+      }
+    }),
+    onAction("refresh", () => {
+      rd.selectType(rd.typeIdx())
+    }),
+  ]
+
+  function handleSelectType(type: string) {
+    const idx = rd.resourceTypes().indexOf(type)
+    if (idx >= 0) {
+      rd.selectType(idx)
+      nav.resetRow()
+      detail.resetOnTypeChange()
+      nav.focusList()
+    }
+  }
+
+  createEffect(() => {
+    for (const type of rd.resourceTypes()) {
+      cleanups.push(onAction(`select-type:${type}`, () => handleSelectType(type)))
+    }
+  })
+
+  onCleanup(() => cleanups.forEach(fn => fn()))
+
   useKeyboardDispatch({
     cluster: props.cluster,
     pane: nav.pane,
     nav, detail, rd, selected,
+    registry: props.registry,
   })
 
   const detailContent = () => {
@@ -67,7 +119,7 @@ export function ResourcesScreen(props: { cluster: string; namespace: string }) {
       <box height={1} flexDirection="row" paddingLeft={1} backgroundColor={C.sidebar}>
         <text content={headerText()} fg={C.accent} />
         <box flexGrow={1} />
-        <text content="C:cluster N:ns " fg={C.dim} />
+        <text content="C:cluster N:ns ::cmd " fg={C.dim} />
       </box>
 
       <box flexDirection="row" flexGrow={1}>
@@ -155,7 +207,7 @@ export function ResourcesScreen(props: { cluster: string; namespace: string }) {
         <text content={`[${nav.pane().toUpperCase()}${detail.detailView() === "logs" && detail.detailOpen() ? "/LOGS" : ""}]`} fg={C.accent} />
         <text content={`  ${rd.items().length > 0 ? `${nav.rowIdx() + 1}/${rd.items().length}` : "empty"}`} fg={C.muted} />
         <Show when={!detail.detailOpen()}>
-          <text content="  j/k:nav  Enter:detail  Tab:pane" fg={C.dim} />
+          <text content="  j/k:nav  Enter:detail  Tab:pane  ::cmd" fg={C.dim} />
         </Show>
         <Show when={detail.detailOpen() && !detail.logsExpanded()}>
           <text content="  L:logs  F:expand  h/l:pane  Esc:back" fg={C.dim} />

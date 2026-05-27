@@ -1,5 +1,8 @@
 import { useKeyboard } from "@opentui/solid"
 import { navigateTo } from "../app"
+import { paletteOpen, paletteHandledKey } from "./useCommandPalette"
+import { commandContext } from "../lib/command-context"
+import { isAvailable, type Command } from "../lib/commands"
 import type { Pane } from "./usePaneNavigation"
 
 interface KeyEvent {
@@ -43,6 +46,7 @@ interface DispatchDeps {
     detailScroll: () => number
   }
   selected: () => { name: string } | undefined
+  registry: () => Command[]
 }
 
 function handleEscapeCascade(key: KeyEvent, deps: DispatchDeps): boolean {
@@ -55,10 +59,8 @@ function handleEscapeCascade(key: KeyEvent, deps: DispatchDeps): boolean {
   return true
 }
 
-function handleCrossCuttingKeys(key: KeyEvent, deps: DispatchDeps): boolean {
+function handleSpatialKeys(key: KeyEvent, deps: DispatchDeps): boolean {
   if (key.name === "tab") { deps.nav.cyclePane(deps.detail.detailOpen(), deps.detail.logsExpanded()); return true }
-  if (key.raw === "C") { navigateTo({ screen: "clusters" }); return true }
-  if (key.raw === "N") { navigateTo({ screen: "namespaces", cluster: deps.cluster }); return true }
   if (key.raw === "[") { deps.nav.resizeSidebar(-2); return true }
   if (key.raw === "]") { deps.nav.resizeSidebar(2); return true }
   return false
@@ -105,10 +107,24 @@ function handlePaneKeys(key: KeyEvent, deps: DispatchDeps): void {
   }
 }
 
+function handleRegistryShortcut(key: KeyEvent, deps: DispatchDeps): boolean {
+  if (!key.raw || key.raw.length !== 1 || key.ctrl || key.meta) return false
+  const ctx = commandContext()
+  for (const cmd of deps.registry()) {
+    if (cmd.shortcut === key.raw && isAvailable(cmd, ctx).available) {
+      cmd.execute(ctx)
+      return true
+    }
+  }
+  return false
+}
+
 export function useKeyboardDispatch(deps: DispatchDeps) {
   useKeyboard((key) => {
+    if (paletteOpen() || paletteHandledKey()) return
     if (handleEscapeCascade(key, deps)) return
-    if (handleCrossCuttingKeys(key, deps)) return
+    if (handleSpatialKeys(key, deps)) return
+    if (handleRegistryShortcut(key, deps)) return
     handlePaneKeys(key, deps)
   })
 }

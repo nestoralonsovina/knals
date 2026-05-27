@@ -3,7 +3,7 @@ import { createSignal } from "solid-js"
 export type Route =
   | { screen: "clusters" }
   | { screen: "namespaces"; cluster: string }
-  | { screen: "resources"; cluster: string; namespace: string }
+  | { screen: "resources"; cluster: string; namespace: string; initialType?: string }
 
 export function createRouteState() {
   const [route, setRoute] = createSignal<Route>({ screen: "clusters" })
