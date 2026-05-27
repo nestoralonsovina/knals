@@ -11,6 +11,7 @@ export type Route =
   | { screen: "clusters" }
   | { screen: "namespaces"; cluster: string }
   | { screen: "resources"; cluster: string; namespace: string; resourceType: ResourceType }
+  | { screen: "detail"; cluster: string; namespace: string; resourceType: ResourceType; resourceName: string }
 
 export function createRouteState() {
   const [route, setRoute] = createSignal<Route>({ screen: "clusters" })
@@ -30,6 +31,9 @@ export function createRouteState() {
       case "resources":
         setRoute({ screen: "namespaces", cluster: current.cluster })
         break
+      case "detail":
+        setRoute({ screen: "resources", cluster: current.cluster, namespace: current.namespace, resourceType: current.resourceType })
+        break
     }
   }
 
@@ -42,6 +46,8 @@ export function createRouteState() {
         return `knals > ${current.cluster}`
       case "resources":
         return `knals > ${current.cluster} > ${current.namespace}`
+      case "detail":
+        return `knals > ${current.cluster} > ${current.namespace} > ${current.resourceName}`
     }
   }
 

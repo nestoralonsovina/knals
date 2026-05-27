@@ -3,6 +3,7 @@ import type { SelectOption } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
 import { RESOURCE_TYPES, type ResourceType } from "../state"
 import { getClustersByCtxNamespacesByNsResourcesByType } from "@knals/sdk"
+import { navigateTo } from "../app"
 
 interface ResourceItem {
   name: string
@@ -62,6 +63,19 @@ export function ResourcesScreen(props: { cluster: string; namespace: string; res
     }
     if (key.name === "k" || key.name === "up") {
       setSelectedRow((i) => Math.max(i - 1, 0))
+    }
+    if (key.name === "return") {
+      const items = data()?.items ?? []
+      if (items.length > 0) {
+        const item = items[selectedRow()]
+        navigateTo({
+          screen: "detail",
+          cluster: props.cluster,
+          namespace: props.namespace,
+          resourceType: activeType(),
+          resourceName: item.name,
+        })
+      }
     }
   })
 

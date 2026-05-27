@@ -6,6 +6,7 @@ import { createRouteState, type Route } from "./state"
 import { ClustersScreen } from "./screens/clusters"
 import { NamespacesScreen } from "./screens/namespaces"
 import { ResourcesScreen } from "./screens/resources"
+import { DetailScreen } from "./screens/detail"
 
 const SERVER_URL = process.env.KNALS_SERVER_URL ?? "http://localhost:8080"
 
@@ -64,6 +65,8 @@ export function App() {
         return "j/k navigate  Enter select  a add  d delete  r discover  Esc back  q quit"
       case "resources":
         return "j/k navigate  h/l switch type  Enter detail  Esc back  q quit"
+      case "detail":
+        return "j/k scroll  g top  Esc back  q quit"
     }
   }
 
@@ -99,6 +102,16 @@ export function App() {
               cluster={r().cluster}
               namespace={r().namespace}
               resourceType={r().resourceType}
+            />
+          )}
+        </Match>
+        <Match when={route().screen === "detail" && route() as any}>
+          {(r) => (
+            <DetailScreen
+              cluster={r().cluster}
+              namespace={r().namespace}
+              resourceType={r().resourceType}
+              resourceName={r().resourceName}
             />
           )}
         </Match>
